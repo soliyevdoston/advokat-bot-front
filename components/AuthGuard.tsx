@@ -1,0 +1,36 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { api } from "../lib/api";
+import { getAccessToken } from "../lib/auth";
+
+export function AuthGuard({ children }: { children: React.ReactNode }) {
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    api
+      .get("/auth/me")
+      .then(() => setLoading(false))
+      .catch(() => {
+        router.replace("/login");
+      });
+  }, [router]);
+
+  if (loading) {
+    return (
+      <main>
+        <div className="surface panel">Admin panel loading...</div>
+      </main>
+    );
+  }
+
+  return <>{children}</>;
+}
