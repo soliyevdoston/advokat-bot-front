@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
-import { TopNav } from "../../components/TopNav";
 import { api } from "../../lib/api";
 import { formatDateTime } from "../../lib/format";
 import type { Payment } from "../../types";
@@ -84,14 +83,14 @@ export default function RequestsPage() {
       rows.push({
         id: `payment-pending-${item.id}`,
         priority: 1,
-        stage: "Tolovni tasdiqlash",
+        stage: "To'lovni tasdiqlash",
         client: clientName(item.user),
-        contact: item.user.telegramId ? `tg:${item.user.telegramId}` : "-",
+        contact: item.user.telegramId ? `tg:${item.user.telegramId}` : "–",
         tariffCode: item.tariff.code,
         timeText: formatDateTime(item.createdAt),
         createdAt: new Date(item.createdAt).getTime(),
         actionHref: "/payments",
-        actionText: "Payments bo‘limi",
+        actionText: "To'lovlarga o'tish",
         statusTag: "tag-danger"
       });
     });
@@ -102,14 +101,14 @@ export default function RequestsPage() {
         rows.push({
           id: `payment-approved-${item.id}`,
           priority: 2,
-          stage: "Mijoz slot tanlashi kutilmoqda",
+          stage: "Mijoz vaqt tanlashi kutilmoqda",
           client: clientName(item.user),
-          contact: item.user.telegramId ? `tg:${item.user.telegramId}` : "-",
+          contact: item.user.telegramId ? `tg:${item.user.telegramId}` : "–",
           tariffCode: item.tariff.code,
           timeText: formatDateTime(item.createdAt),
           createdAt: new Date(item.createdAt).getTime(),
           actionHref: "/payments",
-          actionText: "Payments bo‘limi",
+          actionText: "To'lovlarga o'tish",
           statusTag: "tag-pending"
         });
       });
@@ -118,14 +117,14 @@ export default function RequestsPage() {
       rows.push({
         id: `booking-upcoming-${item.id}`,
         priority: 3,
-        stage: "Bog‘lanish / konsultatsiya",
+        stage: "Konsultatsiya rejalashtirilgan",
         client: clientName(item.user),
-        contact: item.user.telegramId ? `tg:${item.user.telegramId}` : item.user.phone || "-",
+        contact: item.user.telegramId ? `tg:${item.user.telegramId}` : item.user.phone || "–",
         tariffCode: item.payment.tariff.code,
         timeText: formatDateTime(item.slot.startsAt),
         createdAt: new Date(item.slot.startsAt).getTime(),
         actionHref: "/bookings",
-        actionText: "Bookings bo‘limi",
+        actionText: "Bronlarga o'tish",
         statusTag: "tag-ok"
       });
     });
@@ -147,73 +146,68 @@ export default function RequestsPage() {
 
   return (
     <AuthGuard>
-      <TopNav />
       <main>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <h1 style={{ marginBottom: 0 }}>Murojaatlar Navbati</h1>
-          <button className="btn-secondary" onClick={load}>
-            Refresh
-          </button>
+        <div className="page-header">
+          <h1 className="page-title">Murojaatlar navbati</h1>
+          <button className="btn-secondary" onClick={load}>Yangilash</button>
         </div>
 
-        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", marginBottom: 12 }}>
-          <div className="surface panel">
-            <h3>Tolov kutayotganlar</h3>
-            <p style={{ fontSize: 34, margin: 0, fontWeight: 800, color: "#c13838" }}>{stats.pendingCount}</p>
+        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", marginBottom: 20 }}>
+          <div className="surface panel stat-card">
+            <div className="stat-number" style={{ color: "#c13838" }}>{stats.pendingCount}</div>
+            <div className="stat-label">To'lov kutayotganlar</div>
           </div>
-          <div className="surface panel">
-            <h3>Slot kutayotganlar</h3>
-            <p style={{ fontSize: 34, margin: 0, fontWeight: 800, color: "#9e6400" }}>{stats.waitingSlotCount}</p>
+          <div className="surface panel stat-card">
+            <div className="stat-number" style={{ color: "#9e6400" }}>{stats.waitingSlotCount}</div>
+            <div className="stat-label">Vaqt kutayotganlar</div>
           </div>
-          <div className="surface panel">
-            <h3>Yaqin konsultatsiyalar</h3>
-            <p style={{ fontSize: 34, margin: 0, fontWeight: 800, color: "#1f8f53" }}>{stats.upcomingCount}</p>
+          <div className="surface panel stat-card">
+            <div className="stat-number" style={{ color: "#1f8f53" }}>{stats.upcomingCount}</div>
+            <div className="stat-label">Yaqin konsultatsiyalar</div>
           </div>
         </div>
 
-        {loading ? <div className="surface panel">Loading queue...</div> : null}
-        {error ? <div className="surface panel">{error}</div> : null}
+        {loading ? <div className="surface panel" style={{ color: "#546573" }}>Yuklanmoqda...</div> : null}
+        {error ? <div className="surface panel" style={{ color: "#c13838" }}>{error}</div> : null}
 
         {!loading && !error ? (
           <div className="surface panel">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Priority</th>
-                  <th>Bosqich</th>
-                  <th>Mijoz</th>
-                  <th>Aloqa</th>
-                  <th>Tarif</th>
-                  <th>Vaqt</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {queue.length === 0 ? (
+            {queue.length === 0 ? (
+              <div className="empty-state">Hozircha navbat bo'sh</div>
+            ) : (
+              <table className="table">
+                <thead>
                   <tr>
-                    <td colSpan={7}>Hozircha navbat bo‘sh.</td>
+                    <th>Ustuvorlik</th>
+                    <th>Bosqich</th>
+                    <th>Mijoz</th>
+                    <th>Aloqa</th>
+                    <th>Tarif</th>
+                    <th>Vaqt</th>
+                    <th>Bo'lim</th>
                   </tr>
-                ) : (
-                  queue.map((item) => (
+                </thead>
+                <tbody>
+                  {queue.map((item) => (
                     <tr key={item.id}>
                       <td>
                         <span className={`tag ${item.statusTag}`}>P{item.priority}</span>
                       </td>
                       <td>{item.stage}</td>
                       <td>{item.client}</td>
-                      <td>{item.contact}</td>
+                      <td style={{ fontSize: 13 }}>{item.contact}</td>
                       <td>{item.tariffCode}</td>
-                      <td>{item.timeText}</td>
+                      <td style={{ whiteSpace: "nowrap", fontSize: 13 }}>{item.timeText}</td>
                       <td>
-                        <Link href={item.actionHref} style={{ color: "#0d5e93", fontWeight: 700 }}>
+                        <Link href={item.actionHref} style={{ color: "#0d5e93", fontWeight: 700, fontSize: 13 }}>
                           {item.actionText}
                         </Link>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         ) : null}
       </main>

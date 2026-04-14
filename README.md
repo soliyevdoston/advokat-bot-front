@@ -1,39 +1,37 @@
-# Advokat Bot Frontend
+# Advokat Bot Frontend (Admin)
 
-Separate admin frontend for Advokat bot platform.
+Next.js admin panel for the advocate consultation backend.
 
-## Stack
-- Next.js
-- React
+## Key Admin Pages
+- Dashboard: `/dashboard`
+- Request Queue: `/requests`
+- Payments Moderation: `/payments`
+- Client Questions: `/conversations`
+- Unresolved/Escalations: `/unresolved`
+- Users: `/users`
+- Knowledge Base Management: `/knowledge`
+- Tariffs: `/tariffs`
+- Slots: `/slots`
+- Schedule: `/bookings`
+- Dynamic System Settings: `/settings`
 
 ## Run Local
-1. Create env:
-   ```bash
-   cp .env.example .env.local
-   ```
-2. Install:
+1. Install:
    ```bash
    npm install
+   ```
+2. Create env:
+   ```bash
+   cp .env.example .env.local
    ```
 3. Start:
    ```bash
    npm run dev
    ```
 
-## Env
-- `NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1` (local)
-- Production:
-  - `NEXT_PUBLIC_API_BASE_URL=https://<your-render-backend-domain>/api/v1`
+## Build
+- Type-check: `npm run typecheck`
+- Build: `npm run build`
 
-## Deploy (Vercel)
-This repo includes `vercel.json`, so defaults are code-defined.
-
-1. Push this folder as separate Git repo.
-2. Import project in Vercel.
-3. Set `NEXT_PUBLIC_API_BASE_URL`.
-4. Deploy.
-
-## Backend CORS reminder
-Backend (`advokat-bot`) must allow this frontend origin via:
-- `ALLOWED_ORIGIN`
-- or `ALLOWED_ORIGIN_REGEX`
+## Environment
+- `NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1`

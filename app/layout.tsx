@@ -8,8 +8,8 @@ const space = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Advokat Admin",
-  description: "Admin panel for Telegram legal service platform"
+  title: "Advokat Turdimotov — Admin Panel",
+  description: "Huquqiy maslahat va yuridik xizmat admin paneli"
 };
 
 export default function RootLayout({
@@ -18,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="uz">
       <body className={space.variable}>{children}</body>
     </html>
   );

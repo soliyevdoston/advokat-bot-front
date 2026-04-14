@@ -35,45 +35,78 @@ export default function LoginPage() {
   };
 
   return (
-    <main style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
-      <div className="surface panel" style={{ width: "100%", maxWidth: 420 }}>
-        <h1 style={{ marginBottom: 4 }}>Admin Login</h1>
-        <p style={{ color: "#4f6471", marginTop: 0, marginBottom: 20 }}>
-          Moderator + Advokat paneliga kirish
-        </p>
-        <form className="grid" onSubmit={onSubmit}>
-          <label className="grid" style={{ gap: 6 }}>
-            <span>Email</span>
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={{ padding: 10, borderRadius: 10, border: "1px solid #cbd6ca" }}
-              type="email"
-              required
-            />
-          </label>
+    <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: "20px" }}>
+      <div style={{ width: "100%", maxWidth: 400 }}>
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <div style={{
+            width: 56, height: 56,
+            borderRadius: "50%",
+            background: "rgba(255,143,43,0.15)",
+            border: "2px solid rgba(255,143,43,0.4)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 22, margin: "0 auto 16px"
+          }}>
+            ⚖️
+          </div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>
+            Admin Panel
+          </div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "#ff8f2b", lineHeight: 1.2 }}>
+            Advokat Turdimotov M.M.
+          </div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", marginTop: 4 }}>
+            Huquqiy maslahat xizmati
+          </div>
+        </div>
 
-          <label className="grid" style={{ gap: 6 }}>
-            <span>Password</span>
-            <input
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={{ padding: 10, borderRadius: 10, border: "1px solid #cbd6ca" }}
-              type="password"
-              required
-            />
-          </label>
+        <div className="surface panel">
+          <h2 style={{ marginBottom: 4, fontSize: 17 }}>Kirish</h2>
+          <p style={{ color: "#4f6471", marginTop: 0, marginBottom: 20, fontSize: 14 }}>
+            Moderator yoki admin hisobingiz bilan kiring
+          </p>
+          <form className="grid" onSubmit={onSubmit} style={{ gap: 14 }}>
+            <label className="grid" style={{ gap: 6 }}>
+              <span style={{ fontSize: 13, color: "#4f6471", fontWeight: 600 }}>Email</span>
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="input"
+                type="email"
+                required
+                autoComplete="username"
+              />
+            </label>
 
-          {error ? (
-            <div className="tag tag-danger" style={{ width: "fit-content" }}>
-              {error}
-            </div>
-          ) : null}
+            <label className="grid" style={{ gap: 6 }}>
+              <span style={{ fontSize: 13, color: "#4f6471", fontWeight: 600 }}>Parol</span>
+              <input
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="input"
+                type="password"
+                required
+                autoComplete="current-password"
+              />
+            </label>
 
-          <button className="btn-primary" disabled={loading} type="submit">
-            {loading ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
+            {error ? (
+              <div style={{
+                background: "#ffe2e2",
+                color: "#c13838",
+                borderRadius: 10,
+                padding: "10px 14px",
+                fontSize: 14
+              }}>
+                {error}
+              </div>
+            ) : null}
+
+            <button className="btn-primary" disabled={loading} type="submit" style={{ marginTop: 4, padding: "12px 16px" }}>
+              {loading ? "Kirilmoqda..." : "Kirish"}
+            </button>
+          </form>
+        </div>
       </div>
     </main>
   );

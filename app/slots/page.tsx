@@ -1,79 +1,142 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
-import { TopNav } from "../../components/TopNav";
 import { api } from "../../lib/api";
-import { formatDateTime, toDateKey } from "../../lib/format";
 import type { Slot } from "../../types";
 
-const defaultNewSlot = () => {
-  const start = new Date();
-  start.setMinutes(0, 0, 0);
-  start.setHours(start.getHours() + 1);
+const TZ = "Asia/Tashkent";
 
-  const end = new Date(start);
-  end.setMinutes(end.getMinutes() + 60);
+const WORK_HOURS = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+const DAYS_UZ = ["Dush", "Sesh", "Chor", "Pay", "Juma", "Shan", "Yak"];
+const MONTHS_UZ = [
+  "Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun",
+  "Iyul", "Avgust", "Sentabr", "Oktabr", "Noyabr", "Dekabr"
+];
 
-  return {
-    startsAt: start.toISOString().slice(0, 16),
-    endsAt: end.toISOString().slice(0, 16),
-    timezone: "Asia/Tashkent",
-    note: ""
-  };
+function getWeekDays(baseDate: Date): Date[] {
+  const d = new Date(baseDate);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return Array.from({ length: 7 }, (_, i) => {
+    const dd = new Date(d);
+    dd.setDate(d.getDate() + i);
+    return dd;
+  });
+}
+
+function dateKey(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function isSameDay(a: Date, b: Date) {
+  return dateKey(a) === dateKey(b);
+}
+
+function slotKey(d: Date, hour: number) {
+  return `${dateKey(d)}_${hour}`;
+}
+
+const STATUS_COLOR: Record<string, string> = {
+  AVAILABLE: "#22c55e",
+  BOOKED: "#f59e0b",
+  BLOCKED: "#ef4444",
+};
+const STATUS_BG: Record<string, string> = {
+  AVAILABLE: "rgba(34,197,94,0.15)",
+  BOOKED: "rgba(245,158,11,0.15)",
+  BLOCKED: "rgba(239,68,68,0.12)",
+};
+const STATUS_LABEL: Record<string, string> = {
+  AVAILABLE: "Bo'sh",
+  BOOKED: "Band",
+  BLOCKED: "Bloklangan",
 };
 
 export default function SlotsPage() {
-  const [items, setItems] = useState<Slot[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<"ALL" | "AVAILABLE" | "BOOKED" | "BLOCKED">("ALL");
-  const [form, setForm] = useState(defaultNewSlot());
+  const [slots, setSlots] = useState<Slot[]>([]);
+  const [weekBase, setWeekBase] = useState(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+  const [adding, setAdding] = useState<{ day: Date; hour: number } | null>(null);
+  const [duration, setDuration] = useState(60);
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkHours, setBulkHours] = useState<number[]>([9, 10, 11, 14, 15, 16]);
+  const [bulkDays, setBulkDays] = useState<number[]>([0, 1, 2, 3, 4]);
+  const [bulkWeeks, setBulkWeeks] = useState(1);
+
+  const weekDays = useMemo(() => getWeekDays(weekBase), [weekBase]);
 
   const load = async () => {
-    setLoading(true);
-    const query = statusFilter === "ALL" ? "" : `?status=${statusFilter}`;
     try {
-      const slots = await api.get<Slot[]>(`/slots${query}`);
-      setItems(slots);
+      const data = await api.get<Slot[]>("/slots");
+      setSlots(data);
     } catch (err) {
       alert((err as Error).message);
-    } finally {
-      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    load();
-  }, [statusFilter]);
+  useEffect(() => { void load(); }, []);
 
-  const grouped = useMemo(() => {
-    const map = new Map<string, Slot[]>();
-    for (const slot of items) {
-      const key = toDateKey(slot.startsAt);
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(slot);
+  const slotMap = useMemo(() => {
+    const map = new Map<string, Slot>();
+    for (const s of slots) {
+      const d = new Date(s.startsAt);
+      const key = slotKey(d, d.getHours());
+      map.set(key, s);
     }
-    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
-  }, [items]);
+    return map;
+  }, [slots]);
 
-  const createSlot = async (e: FormEvent) => {
-    e.preventDefault();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const isPast = (d: Date, hour: number) => {
+    const t = new Date(d);
+    t.setHours(hour, 0, 0, 0);
+    return t < new Date();
+  };
+
+  const openAdd = (day: Date, hour: number) => {
+    if (isPast(day, hour)) return;
+    const key = slotKey(day, hour);
+    if (slotMap.has(key)) return;
+    setNote("");
+    setDuration(60);
+    setAdding({ day, hour });
+  };
+
+  const saveSlot = async () => {
+    if (!adding) return;
+    setSaving(true);
     try {
+      const start = new Date(adding.day);
+      start.setHours(adding.hour, 0, 0, 0);
+      const end = new Date(start);
+      end.setMinutes(end.getMinutes() + duration);
       await api.post("/slots", {
-        startsAt: new Date(form.startsAt).toISOString(),
-        endsAt: new Date(form.endsAt).toISOString(),
-        timezone: form.timezone,
-        note: form.note || undefined
+        startsAt: start.toISOString(),
+        endsAt: end.toISOString(),
+        timezone: TZ,
+        note: note || undefined,
       });
-      setForm(defaultNewSlot());
+      setAdding(null);
       await load();
     } catch (err) {
       alert((err as Error).message);
+    } finally {
+      setSaving(false);
     }
   };
 
   const blockSlot = async (slotId: string) => {
-    if (!confirm("Block this slot?")) return;
+    if (!confirm("Bu vaqtni bloklashni tasdiqlaysizmi?")) return;
     try {
       await api.delete(`/slots/${slotId}`);
       await load();
@@ -82,131 +145,316 @@ export default function SlotsPage() {
     }
   };
 
+  const prevWeek = () => setWeekBase(d => { const n = new Date(d); n.setDate(n.getDate() - 7); return n; });
+  const nextWeek = () => setWeekBase(d => { const n = new Date(d); n.setDate(n.getDate() + 7); return n; });
+  const goToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); setWeekBase(d); };
+
+  const toggleBulkHour = (h: number) =>
+    setBulkHours(prev => prev.includes(h) ? prev.filter(x => x !== h) : [...prev, h].sort((a,b) => a-b));
+  const toggleBulkDay = (d: number) =>
+    setBulkDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d].sort((a,b) => a-b));
+
+  const saveBulk = async () => {
+    if (bulkDays.length === 0 || bulkHours.length === 0) return;
+    setSaving(true);
+    try {
+      const base = new Date(weekBase);
+      base.setHours(0, 0, 0, 0);
+      const toCreate: { startsAt: string; endsAt: string; timezone: string }[] = [];
+      for (let w = 0; w < bulkWeeks; w++) {
+        for (const dayIdx of bulkDays) {
+          const d = new Date(base);
+          d.setDate(base.getDate() + dayIdx + w * 7);
+          for (const hour of bulkHours) {
+            const start = new Date(d);
+            start.setHours(hour, 0, 0, 0);
+            if (start < new Date()) continue;
+            const key = slotKey(d, hour);
+            if (slotMap.has(key)) continue;
+            const end = new Date(start);
+            end.setMinutes(60);
+            toCreate.push({ startsAt: start.toISOString(), endsAt: end.toISOString(), timezone: TZ });
+          }
+        }
+      }
+      for (const s of toCreate) {
+        await api.post("/slots", s);
+      }
+      setBulkMode(false);
+      await load();
+      alert(`${toCreate.length} ta vaqt qo'shildi ✅`);
+    } catch (err) {
+      alert((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const weekLabel = `${weekDays[0].getDate()} ${MONTHS_UZ[weekDays[0].getMonth()]} – ${weekDays[6].getDate()} ${MONTHS_UZ[weekDays[6].getMonth()]} ${weekDays[6].getFullYear()}`;
+
   return (
     <AuthGuard>
-      <TopNav />
-      <main className="admin-split">
-        <section className="surface panel">
-          <h2 style={{ marginBottom: 12 }}>Create Slot</h2>
-          <form onSubmit={createSlot} className="grid">
-            <label className="grid" style={{ gap: 6 }}>
-              <span>Start</span>
-              <input
-                type="datetime-local"
-                value={form.startsAt}
-                onChange={(e) => setForm((prev) => ({ ...prev, startsAt: e.target.value }))}
-                style={{ padding: 10, borderRadius: 10, border: "1px solid #cbd6ca" }}
-                required
-              />
-            </label>
-            <label className="grid" style={{ gap: 6 }}>
-              <span>End</span>
-              <input
-                type="datetime-local"
-                value={form.endsAt}
-                onChange={(e) => setForm((prev) => ({ ...prev, endsAt: e.target.value }))}
-                style={{ padding: 10, borderRadius: 10, border: "1px solid #cbd6ca" }}
-                required
-              />
-            </label>
-            <label className="grid" style={{ gap: 6 }}>
-              <span>Timezone</span>
-              <input
-                value={form.timezone}
-                onChange={(e) => setForm((prev) => ({ ...prev, timezone: e.target.value }))}
-                style={{ padding: 10, borderRadius: 10, border: "1px solid #cbd6ca" }}
-                required
-              />
-            </label>
-            <label className="grid" style={{ gap: 6 }}>
-              <span>Note</span>
-              <textarea
-                rows={3}
-                value={form.note}
-                onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
-                style={{ padding: 10, borderRadius: 10, border: "1px solid #cbd6ca" }}
-              />
-            </label>
-            <button className="btn-primary" type="submit">
-              Create
+      <main>
+        {/* Header */}
+        <div className="page-header" style={{ marginBottom: 16 }}>
+          <h1 className="page-title">Vaqt jadvali</h1>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="btn-secondary" onClick={() => { setBulkMode(m => !m); }}>
+              {bulkMode ? "✕ Yopish" : "⚡ Ommaviy qo'shish"}
             </button>
-          </form>
-        </section>
+            <button className="btn-secondary" onClick={load}>↻ Yangilash</button>
+          </div>
+        </div>
 
-        <section className="surface panel">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <h2 style={{ marginBottom: 0 }}>Slots Calendar</h2>
-            <div style={{ display: "flex", gap: 8 }}>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-                style={{ borderRadius: 10, padding: "8px 10px", border: "1px solid #cbd6ca" }}
+        {/* Bulk add panel */}
+        {bulkMode && (
+          <div className="surface panel" style={{ marginBottom: 16 }}>
+            <h3 style={{ marginBottom: 12, fontSize: 15 }}>⚡ Ommaviy vaqt qo'shish</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div>
+                <div style={{ fontSize: 13, color: "#4f6471", fontWeight: 600, marginBottom: 8 }}>Kunlar (haftaning):</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {DAYS_UZ.map((label, i) => (
+                    <button
+                      key={i}
+                      onClick={() => toggleBulkDay(i)}
+                      style={{
+                        padding: "6px 12px", borderRadius: 8, fontSize: 13, cursor: "pointer", border: "none",
+                        background: bulkDays.includes(i) ? "#ff8f2b" : "rgba(255,255,255,0.08)",
+                        color: bulkDays.includes(i) ? "#fff" : "#8fafc0",
+                        fontWeight: bulkDays.includes(i) ? 700 : 400,
+                      }}
+                    >{label}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 13, color: "#4f6471", fontWeight: 600, marginBottom: 8 }}>Soatlar:</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {WORK_HOURS.map(h => (
+                    <button
+                      key={h}
+                      onClick={() => toggleBulkHour(h)}
+                      style={{
+                        padding: "6px 10px", borderRadius: 8, fontSize: 13, cursor: "pointer", border: "none",
+                        background: bulkHours.includes(h) ? "#3b82f6" : "rgba(255,255,255,0.08)",
+                        color: bulkHours.includes(h) ? "#fff" : "#8fafc0",
+                        fontWeight: bulkHours.includes(h) ? 700 : 400,
+                      }}
+                    >{h}:00</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12 }}>
+              <label style={{ fontSize: 13, color: "#4f6471", fontWeight: 600 }}>Necha hafta:</label>
+              <input
+                type="number" min={1} max={8} value={bulkWeeks}
+                onChange={e => setBulkWeeks(Math.max(1, Math.min(8, Number(e.target.value))))}
+                className="input" style={{ width: 80 }}
+              />
+              <button
+                className="btn-primary"
+                disabled={saving || bulkDays.length === 0 || bulkHours.length === 0}
+                onClick={saveBulk}
               >
-                <option value="ALL">All</option>
-                <option value="AVAILABLE">Available</option>
-                <option value="BOOKED">Booked</option>
-                <option value="BLOCKED">Blocked</option>
-              </select>
-              <button className="btn-secondary" onClick={load}>
-                Refresh
+                {saving ? "Saqlanmoqda..." : `Qo'shish (${bulkDays.length * bulkHours.length * bulkWeeks} ta)`}
               </button>
             </div>
           </div>
+        )}
 
-          {loading ? <p>Loading slots...</p> : null}
+        {/* Week navigation */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+          <button className="btn-secondary" style={{ padding: "6px 14px" }} onClick={prevWeek}>←</button>
+          <button className="btn-secondary" style={{ padding: "6px 14px" }} onClick={nextWeek}>→</button>
+          <button className="btn-secondary" style={{ padding: "6px 14px" }} onClick={goToday}>Bugun</button>
+          <span style={{ fontWeight: 700, fontSize: 15 }}>{weekLabel}</span>
+        </div>
 
-          {!loading && grouped.length === 0 ? <p>No slots found.</p> : null}
-
-          <div className="grid">
-            {grouped.map(([date, slots]) => (
-              <div key={date} style={{ border: "1px solid #d9e0d5", borderRadius: 12, overflow: "hidden" }}>
-                <div style={{ background: "#eff2ea", padding: "10px 12px", fontWeight: 800 }}>{date}</div>
-                <table className="table" style={{ marginBottom: 0 }}>
-                  <thead>
-                    <tr>
-                      <th>Interval</th>
-                      <th>Status</th>
-                      <th>Note</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {slots.map((slot) => (
-                      <tr key={slot.id}>
-                        <td>
-                          {formatDateTime(slot.startsAt)} - {new Date(slot.endsAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-                        </td>
-                        <td>
-                          <span
-                            className={`tag ${
-                              slot.status === "AVAILABLE"
-                                ? "tag-ok"
-                                : slot.status === "BOOKED"
-                                  ? "tag-pending"
-                                  : "tag-danger"
-                            }`}
-                          >
-                            {slot.status}
-                          </span>
-                        </td>
-                        <td>{slot.note || "-"}</td>
-                        <td>
-                          {slot.status !== "BLOCKED" ? (
-                            <button className="btn-danger" onClick={() => blockSlot(slot.id)}>
-                              Block
-                            </button>
-                          ) : (
-                            "-"
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ))}
+        {/* Legend */}
+        <div style={{ display: "flex", gap: 16, marginBottom: 12, fontSize: 13 }}>
+          {Object.entries(STATUS_LABEL).map(([k, v]) => (
+            <div key={k} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ width: 12, height: 12, borderRadius: 3, background: STATUS_COLOR[k] }} />
+              <span style={{ color: "#8fafc0" }}>{v}</span>
+            </div>
+          ))}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ width: 12, height: 12, borderRadius: 3, background: "rgba(255,255,255,0.05)", border: "1px dashed rgba(255,255,255,0.15)" }} />
+            <span style={{ color: "#8fafc0" }}>Bo'sh (bosish bilan qo'shish)</span>
           </div>
-        </section>
+        </div>
+
+        {/* Calendar grid */}
+        <div className="surface panel" style={{ padding: 0, overflow: "hidden" }}>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "56px repeat(7, 1fr)",
+            borderBottom: "1px solid rgba(255,255,255,0.07)",
+          }}>
+            <div style={{ padding: "10px 8px", fontSize: 12, color: "#4f6471" }} />
+            {weekDays.map((d, i) => {
+              const isToday = isSameDay(d, new Date());
+              return (
+                <div
+                  key={i}
+                  style={{
+                    padding: "10px 4px",
+                    textAlign: "center",
+                    fontWeight: isToday ? 800 : 600,
+                    fontSize: 13,
+                    color: isToday ? "#ff8f2b" : "#c8d8e0",
+                    borderLeft: "1px solid rgba(255,255,255,0.07)",
+                    background: isToday ? "rgba(255,143,43,0.06)" : "transparent",
+                  }}
+                >
+                  <div>{DAYS_UZ[i]}</div>
+                  <div style={{ fontSize: 18, marginTop: 2 }}>{d.getDate()}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          {WORK_HOURS.map(hour => (
+            <div
+              key={hour}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "56px repeat(7, 1fr)",
+                borderBottom: "1px solid rgba(255,255,255,0.05)",
+              }}
+            >
+              <div style={{
+                padding: "8px 4px",
+                textAlign: "center",
+                fontSize: 12,
+                color: "#4f6471",
+                fontWeight: 600,
+                borderRight: "1px solid rgba(255,255,255,0.07)",
+              }}>
+                {hour}:00
+              </div>
+              {weekDays.map((day, di) => {
+                const key = slotKey(day, hour);
+                const slot = slotMap.get(key);
+                const past = isPast(day, hour);
+
+                return (
+                  <div
+                    key={di}
+                    onClick={() => slot ? undefined : openAdd(day, hour)}
+                    style={{
+                      borderLeft: "1px solid rgba(255,255,255,0.05)",
+                      minHeight: 48,
+                      padding: 4,
+                      cursor: slot || past ? "default" : "pointer",
+                      background: slot
+                        ? STATUS_BG[slot.status]
+                        : past
+                          ? "rgba(0,0,0,0.08)"
+                          : "transparent",
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={e => {
+                      if (!slot && !past) (e.currentTarget as HTMLDivElement).style.background = "rgba(255,143,43,0.08)";
+                    }}
+                    onMouseLeave={e => {
+                      if (!slot && !past) (e.currentTarget as HTMLDivElement).style.background = "transparent";
+                    }}
+                  >
+                    {slot ? (
+                      <div style={{ fontSize: 11, padding: "2px 4px" }}>
+                        <div style={{
+                          fontWeight: 700,
+                          color: STATUS_COLOR[slot.status],
+                          marginBottom: 2,
+                        }}>
+                          {STATUS_LABEL[slot.status]}
+                        </div>
+                        {slot.note && (
+                          <div style={{ color: "#8fafc0", fontSize: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {slot.note}
+                          </div>
+                        )}
+                        {slot.status !== "BLOCKED" && (
+                          <button
+                            onClick={e => { e.stopPropagation(); blockSlot(slot.id); }}
+                            style={{
+                              marginTop: 4, fontSize: 10, padding: "2px 6px",
+                              background: "rgba(239,68,68,0.2)", color: "#ef4444",
+                              border: "none", borderRadius: 4, cursor: "pointer",
+                            }}
+                          >
+                            Blok
+                          </button>
+                        )}
+                      </div>
+                    ) : past ? null : (
+                      <div style={{
+                        width: "100%", height: "100%", minHeight: 40,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        color: "rgba(255,255,255,0.1)", fontSize: 18,
+                      }}>+</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+
+        {/* Add slot modal */}
+        {adding && (
+          <div
+            style={{
+              position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
+              display: "grid", placeItems: "center", zIndex: 100,
+            }}
+            onClick={e => { if (e.target === e.currentTarget) setAdding(null); }}
+          >
+            <div className="surface panel" style={{ width: "100%", maxWidth: 400 }}>
+              <h2 style={{ marginBottom: 4, fontSize: 16 }}>Yangi vaqt qo'shish</h2>
+              <p style={{ color: "#4f6471", marginTop: 0, marginBottom: 16, fontSize: 14 }}>
+                📅 {DAYS_UZ[adding.day.getDay() === 0 ? 6 : adding.day.getDay() - 1]}, {adding.day.getDate()} {MONTHS_UZ[adding.day.getMonth()]} — {adding.hour}:00
+              </p>
+              <div className="grid" style={{ gap: 12 }}>
+                <label className="grid" style={{ gap: 6 }}>
+                  <span style={{ fontSize: 13, color: "#4f6471", fontWeight: 600 }}>Davomiyligi (daqiqa)</span>
+                  <select
+                    value={duration}
+                    onChange={e => setDuration(Number(e.target.value))}
+                    className="input"
+                  >
+                    <option value={30}>30 daqiqa</option>
+                    <option value={60}>1 soat</option>
+                    <option value={90}>1.5 soat</option>
+                    <option value={120}>2 soat</option>
+                  </select>
+                </label>
+                <label className="grid" style={{ gap: 6 }}>
+                  <span style={{ fontSize: 13, color: "#4f6471", fontWeight: 600 }}>Izoh (ixtiyoriy)</span>
+                  <input
+                    className="input"
+                    value={note}
+                    onChange={e => setNote(e.target.value)}
+                    placeholder="masalan: Dastlabki maslahat"
+                  />
+                </label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    className="btn-primary"
+                    disabled={saving}
+                    onClick={saveSlot}
+                  >
+                    {saving ? "Saqlanmoqda..." : "Qo'shish"}
+                  </button>
+                  <button className="btn-secondary" onClick={() => setAdding(null)}>Bekor</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </AuthGuard>
   );

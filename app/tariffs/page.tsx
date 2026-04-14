@@ -2,7 +2,6 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
-import { TopNav } from "../../components/TopNav";
 import { api } from "../../lib/api";
 import { formatMoney } from "../../lib/format";
 import type { Tariff } from "../../types";
@@ -55,7 +54,7 @@ const toForm = (tariff: Tariff): TariffForm => ({
 const toPayload = (form: TariffForm) => {
   const price = Number(form.price);
   if (!Number.isFinite(price) || price <= 0) {
-    throw new Error("Price must be greater than 0");
+    throw new Error("Narx 0 dan katta bo'lishi kerak");
   }
 
   const descriptionI18n: Record<string, string> = {};
@@ -144,7 +143,7 @@ export default function TariffsPage() {
   };
 
   const onDelete = async (tariff: Tariff) => {
-    if (!confirm(`Disable tariff "${tariff.code}"?`)) return;
+    if (!confirm(`"${tariff.code}" tarifini o'chirishni tasdiqlaysizmi?`)) return;
     try {
       await api.delete(`/tariffs/${tariff.id}`);
       await load();
@@ -156,131 +155,126 @@ export default function TariffsPage() {
     }
   };
 
+  const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
+    <label className="grid" style={{ gap: 6 }}>
+      <span style={{ fontSize: 13, color: "#4f6471", fontWeight: 600 }}>{label}</span>
+      {children}
+    </label>
+  );
+
   return (
     <AuthGuard>
-      <TopNav />
       <main className="admin-split">
         <section className="surface panel">
-          <h2 style={{ marginBottom: 12 }}>{editingId ? "Edit Subscription Tariff" : "Create Subscription Tariff"}</h2>
+          <h2 style={{ marginBottom: 16 }}>{editingId ? "Tarifni tahrirlash" : "Yangi tarif"}</h2>
           <form onSubmit={onSubmit} className="grid">
-            <label className="grid" style={{ gap: 6 }}>
-              <span>Code</span>
+            <Field label="Kod">
               <input
                 value={form.code}
                 onChange={(e) => setForm((prev) => ({ ...prev, code: e.target.value }))}
-                placeholder="STANDARD"
-                style={{ padding: 10, borderRadius: 10, border: "1px solid #cbd6ca" }}
+                placeholder="STANDART"
+                className="input"
                 required
               />
-            </label>
+            </Field>
 
-            <label className="grid" style={{ gap: 6 }}>
-              <span>Title (UZ)</span>
+            <Field label="Nomi (UZ)">
               <input
                 value={form.titleUz}
                 onChange={(e) => setForm((prev) => ({ ...prev, titleUz: e.target.value }))}
-                style={{ padding: 10, borderRadius: 10, border: "1px solid #cbd6ca" }}
+                className="input"
                 required
               />
-            </label>
+            </Field>
 
-            <label className="grid" style={{ gap: 6 }}>
-              <span>Title (RU)</span>
+            <Field label="Nomi (RU)">
               <input
                 value={form.titleRu}
                 onChange={(e) => setForm((prev) => ({ ...prev, titleRu: e.target.value }))}
-                style={{ padding: 10, borderRadius: 10, border: "1px solid #cbd6ca" }}
+                className="input"
                 required
               />
-            </label>
+            </Field>
 
-            <label className="grid" style={{ gap: 6 }}>
-              <span>Title (EN)</span>
+            <Field label="Nomi (EN)">
               <input
                 value={form.titleEn}
                 onChange={(e) => setForm((prev) => ({ ...prev, titleEn: e.target.value }))}
-                style={{ padding: 10, borderRadius: 10, border: "1px solid #cbd6ca" }}
+                className="input"
                 required
               />
-            </label>
+            </Field>
 
-            <label className="grid" style={{ gap: 6 }}>
-              <span>Description (UZ)</span>
+            <Field label="Tavsif (UZ)">
               <textarea
                 rows={2}
                 value={form.descriptionUz}
                 onChange={(e) => setForm((prev) => ({ ...prev, descriptionUz: e.target.value }))}
-                style={{ padding: 10, borderRadius: 10, border: "1px solid #cbd6ca" }}
+                className="input"
               />
-            </label>
+            </Field>
 
-            <label className="grid" style={{ gap: 6 }}>
-              <span>Description (RU)</span>
+            <Field label="Tavsif (RU)">
               <textarea
                 rows={2}
                 value={form.descriptionRu}
                 onChange={(e) => setForm((prev) => ({ ...prev, descriptionRu: e.target.value }))}
-                style={{ padding: 10, borderRadius: 10, border: "1px solid #cbd6ca" }}
+                className="input"
               />
-            </label>
+            </Field>
 
-            <label className="grid" style={{ gap: 6 }}>
-              <span>Description (EN)</span>
+            <Field label="Tavsif (EN)">
               <textarea
                 rows={2}
                 value={form.descriptionEn}
                 onChange={(e) => setForm((prev) => ({ ...prev, descriptionEn: e.target.value }))}
-                style={{ padding: 10, borderRadius: 10, border: "1px solid #cbd6ca" }}
+                className="input"
               />
-            </label>
+            </Field>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <label className="grid" style={{ gap: 6 }}>
-                <span>Price</span>
+              <Field label="Narx">
                 <input
                   type="number"
                   min="0.01"
                   step="0.01"
                   value={form.price}
                   onChange={(e) => setForm((prev) => ({ ...prev, price: e.target.value }))}
-                  style={{ padding: 10, borderRadius: 10, border: "1px solid #cbd6ca" }}
+                  className="input"
                   required
                 />
-              </label>
-              <label className="grid" style={{ gap: 6 }}>
-                <span>Currency</span>
+              </Field>
+              <Field label="Valyuta">
                 <input
                   value={form.currency}
                   onChange={(e) => setForm((prev) => ({ ...prev, currency: e.target.value }))}
-                  style={{ padding: 10, borderRadius: 10, border: "1px solid #cbd6ca" }}
+                  className="input"
                   required
                 />
-              </label>
+              </Field>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <label className="grid" style={{ gap: 6 }}>
-                <span>Duration (minutes)</span>
+              <Field label="Davomiylik (daq.)">
                 <input
                   type="number"
                   min="15"
                   max="480"
                   value={form.durationMinutes}
                   onChange={(e) => setForm((prev) => ({ ...prev, durationMinutes: e.target.value }))}
-                  style={{ padding: 10, borderRadius: 10, border: "1px solid #cbd6ca" }}
+                  className="input"
                   required
                 />
-              </label>
-              <label className="grid" style={{ gap: 6 }}>
-                <span>Sort order</span>
+              </Field>
+              <Field label="Tartib raqami">
                 <input
                   type="number"
                   value={form.sortOrder}
                   onChange={(e) => setForm((prev) => ({ ...prev, sortOrder: e.target.value }))}
-                  style={{ padding: 10, borderRadius: 10, border: "1px solid #cbd6ca" }}
+                  className="input"
                   required
                 />
-              </label>
+              </Field>
             </div>
 
             <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -289,16 +283,16 @@ export default function TariffsPage() {
                 checked={form.isActive}
                 onChange={(e) => setForm((prev) => ({ ...prev, isActive: e.target.checked }))}
               />
-              Active
+              Faol
             </label>
 
             <div style={{ display: "flex", gap: 8 }}>
               <button className="btn-primary" type="submit" disabled={saving}>
-                {saving ? "Saving..." : editingId ? "Update" : "Create"}
+                {saving ? "Saqlanmoqda..." : editingId ? "Saqlash" : "Qo'shish"}
               </button>
               {editingId ? (
                 <button className="btn-danger" type="button" onClick={clearForm}>
-                  Cancel edit
+                  Bekor
                 </button>
               ) : null}
             </div>
@@ -306,66 +300,62 @@ export default function TariffsPage() {
         </section>
 
         <section className="surface panel">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <h2 style={{ marginBottom: 0 }}>Subscription Tariffs</h2>
-            <button className="btn-secondary" onClick={load}>
-              Refresh
-            </button>
+          <div className="page-header" style={{ marginBottom: 16 }}>
+            <h2 className="page-title" style={{ fontSize: 18 }}>Tariflar ro'yxati</h2>
+            <button className="btn-secondary" onClick={load}>Yangilash</button>
           </div>
 
-          {loading ? <p>Loading tariffs...</p> : null}
-          {error ? <p>{error}</p> : null}
+          {loading ? <p style={{ color: "#546573" }}>Yuklanmoqda...</p> : null}
+          {error ? <p style={{ color: "#c13838" }}>{error}</p> : null}
 
           {!loading && !error ? (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Code</th>
-                  <th>Titles</th>
-                  <th>Price</th>
-                  <th>Duration</th>
-                  <th>Order</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedItems.length === 0 ? (
+            sortedItems.length === 0 ? (
+              <div className="empty-state">Tariflar topilmadi</div>
+            ) : (
+              <table className="table">
+                <thead>
                   <tr>
-                    <td colSpan={7}>No tariffs found.</td>
+                    <th>Kod</th>
+                    <th>Nomlar</th>
+                    <th>Narx</th>
+                    <th>Davomiylik</th>
+                    <th>Tartib</th>
+                    <th>Holat</th>
+                    <th>Amal</th>
                   </tr>
-                ) : (
-                  sortedItems.map((item) => (
+                </thead>
+                <tbody>
+                  {sortedItems.map((item) => (
                     <tr key={item.id}>
-                      <td>{item.code}</td>
+                      <td><strong>{item.code}</strong></td>
                       <td>
-                        <div>UZ: {item.titleI18n?.uz || "-"}</div>
-                        <div>RU: {item.titleI18n?.ru || "-"}</div>
-                        <div>EN: {item.titleI18n?.en || "-"}</div>
+                        <div style={{ fontSize: 13 }}>UZ: {item.titleI18n?.uz || "–"}</div>
+                        <div style={{ fontSize: 13 }}>RU: {item.titleI18n?.ru || "–"}</div>
+                        <div style={{ fontSize: 13 }}>EN: {item.titleI18n?.en || "–"}</div>
                       </td>
                       <td>{formatMoney(item.priceMinor, item.currency)}</td>
-                      <td>{item.durationMinutes} min</td>
+                      <td>{item.durationMinutes} daq.</td>
                       <td>{item.sortOrder}</td>
                       <td>
                         <span className={`tag ${item.isActive ? "tag-ok" : "tag-danger"}`}>
-                          {item.isActive ? "ACTIVE" : "INACTIVE"}
+                          {item.isActive ? "Faol" : "Nofaol"}
                         </span>
                       </td>
                       <td>
                         <div style={{ display: "flex", gap: 8 }}>
-                          <button className="btn-secondary" onClick={() => onEdit(item)}>
-                            Edit
+                          <button className="btn-secondary" style={{ fontSize: 13 }} onClick={() => onEdit(item)}>
+                            Tahrir
                           </button>
-                          <button className="btn-danger" onClick={() => onDelete(item)}>
-                            Disable
+                          <button className="btn-danger" style={{ fontSize: 13 }} onClick={() => onDelete(item)}>
+                            O'chirish
                           </button>
                         </div>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            )
           ) : null}
         </section>
       </main>

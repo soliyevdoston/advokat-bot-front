@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
-import { TopNav } from "../../components/TopNav";
 import { api } from "../../lib/api";
 import { formatDateTime, formatMoney } from "../../lib/format";
 import type { Payment } from "../../types";
@@ -67,7 +66,7 @@ export default function PaymentsPage() {
   }, []);
 
   const moderate = async (paymentId: string, action: "approve" | "reject") => {
-    const note = prompt(`Moderation note (${action})`, "") ?? "";
+    const note = prompt(`Izoh (${action === "approve" ? "tasdiqlash" : "rad etish"})`, "") ?? "";
     try {
       await api.post(`/payments/${paymentId}/${action}`, { note: note || undefined });
       await load();
@@ -91,46 +90,41 @@ export default function PaymentsPage() {
 
   return (
     <AuthGuard>
-      <TopNav />
       <main>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h1 style={{ marginBottom: 12 }}>Payments Moderation</h1>
-          <button className="btn-secondary" onClick={load}>
-            Refresh
-          </button>
+        <div className="page-header">
+          <h1 className="page-title">To'lovlar moderatsiyasi</h1>
+          <button className="btn-secondary" onClick={load}>Yangilash</button>
         </div>
 
-        {loading ? <div className="surface panel">Loading payments...</div> : null}
-        {error ? <div className="surface panel">{error}</div> : null}
+        {loading ? <div className="surface panel" style={{ color: "#546573" }}>Yuklanmoqda...</div> : null}
+        {error ? <div className="surface panel" style={{ color: "#c13838" }}>{error}</div> : null}
 
         {!loading && !error ? (
           <div className="surface panel">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Client</th>
-                  <th>Payment</th>
-                  <th>Tariff</th>
-                  <th>Amount</th>
-                  <th>Receipt(s)</th>
-                  <th>Created</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.length === 0 ? (
+            {items.length === 0 ? (
+              <div className="empty-state">Kutilayotgan to'lovlar yo'q</div>
+            ) : (
+              <table className="table">
+                <thead>
                   <tr>
-                    <td colSpan={7}>No pending payments.</td>
+                    <th>Mijoz</th>
+                    <th>To'lov</th>
+                    <th>Tarif</th>
+                    <th>Summa</th>
+                    <th>Chek</th>
+                    <th>Sana</th>
+                    <th>Amal</th>
                   </tr>
-                ) : (
-                  items.map((item) => {
+                </thead>
+                <tbody>
+                  {items.map((item) => {
                     const latestReceipt = item.receipts[0];
                     return (
                       <tr key={item.id}>
                         <td>
                           <div style={{ fontWeight: 700 }}>{item.user.fullName || item.user.username || item.user.id}</div>
-                          <div style={{ fontSize: 12, color: "#4f6471" }}>{item.user.telegramId || "-"}</div>
-                          <div style={{ fontSize: 12, color: "#4f6471" }}>user_id: {item.user.id.slice(0, 8)}...</div>
+                          <div style={{ fontSize: 12, color: "#4f6471" }}>{item.user.telegramId ? `tg: ${item.user.telegramId}` : "-"}</div>
+                          <div style={{ fontSize: 12, color: "#4f6471" }}>id: {item.user.id.slice(0, 8)}...</div>
                         </td>
                         <td>
                           <div style={{ fontFamily: "monospace", fontSize: 12 }}>{item.id.slice(0, 8)}...</div>
@@ -144,16 +138,16 @@ export default function PaymentsPage() {
                               {receiptPreviewMap[latestReceipt.id] ? (
                                 <img
                                   src={receiptPreviewMap[latestReceipt.id]}
-                                  alt="Receipt preview"
+                                  alt="Chek"
                                   className="receipt-thumb"
                                   onClick={() => openReceipt(latestReceipt.id)}
                                 />
                               ) : (
-                                <div className="receipt-thumb receipt-thumb-fallback">Preview loading...</div>
+                                <div className="receipt-thumb receipt-thumb-fallback">Yuklanmoqda...</div>
                               )}
                               <div className="receipt-meta">
                                 <div style={{ fontSize: 12, color: "#4f6471" }}>
-                                  Latest: {formatDateTime(latestReceipt.createdAt)}
+                                  {formatDateTime(latestReceipt.createdAt)}
                                 </div>
                                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                                   {item.receipts.map((receipt, index) => (
@@ -163,33 +157,33 @@ export default function PaymentsPage() {
                                       style={{ padding: "4px 8px", fontSize: 12 }}
                                       onClick={() => openReceipt(receipt.id)}
                                     >
-                                      Receipt #{index + 1}
+                                      Chek #{index + 1}
                                     </button>
                                   ))}
                                 </div>
                               </div>
                             </div>
                           ) : (
-                            <span className="tag tag-danger">Missing</span>
+                            <span className="tag tag-danger">Yo'q</span>
                           )}
                         </td>
                         <td>{formatDateTime(item.createdAt)}</td>
                         <td>
                           <div style={{ display: "flex", gap: 8 }}>
                             <button className="btn-secondary" onClick={() => moderate(item.id, "approve")}>
-                              Approve
+                              Tasdiqlash
                             </button>
                             <button className="btn-danger" onClick={() => moderate(item.id, "reject")}>
-                              Reject
+                              Rad etish
                             </button>
                           </div>
                         </td>
                       </tr>
                     );
-                  })
-                )}
-              </tbody>
-            </table>
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
         ) : null}
       </main>

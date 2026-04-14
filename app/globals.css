@@ -1,6 +1,7 @@
 :root {
-  --bg-1: #081b22;
-  --bg-2: #102c36;
+  --bg-1: #06131a;
+  --bg-2: #0c2030;
+  --sidebar-w: 220px;
   --card: #f6f7f1;
   --ink: #11202a;
   --muted: #4f6471;
@@ -23,8 +24,8 @@ body {
 
 body {
   font-family: var(--font-space-grotesk), sans-serif;
-  background: radial-gradient(circle at 20% 10%, #17495c, var(--bg-1) 45%),
-    linear-gradient(125deg, var(--bg-1), var(--bg-2));
+  background: radial-gradient(ellipse at 10% 0%, #143347 0%, var(--bg-1) 55%),
+    linear-gradient(180deg, var(--bg-1), var(--bg-2));
   color: #fefdf8;
   min-height: 100vh;
 }
@@ -34,23 +35,31 @@ a {
   text-decoration: none;
 }
 
-main {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 24px;
-  animation: fade-in 260ms ease-out;
+/* ── Layout ─────────────────────────────── */
+.page-shell {
+  display: flex;
+  min-height: 100vh;
 }
 
+main {
+  flex: 1;
+  margin-left: var(--sidebar-w);
+  max-width: calc(1260px + var(--sidebar-w));
+  padding: 28px 28px 40px;
+  animation: fade-in 240ms ease-out;
+}
+
+/* ── Surface / Card ──────────────────────── */
 .surface {
   background: var(--card);
   color: var(--ink);
-  border-radius: 18px;
-  border: 1px solid color-mix(in srgb, var(--border), #000 8%);
-  box-shadow: 0 20px 42px rgba(0, 0, 0, 0.18);
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--border), #000 6%);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.16);
 }
 
 .panel {
-  padding: 18px;
+  padding: 20px;
 }
 
 h1,
@@ -67,22 +76,39 @@ button {
   font: inherit;
 }
 
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #cbd6ca;
+  background: #fff;
+  color: var(--ink);
+}
+
+.input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 button {
   border: none;
   border-radius: 10px;
-  padding: 10px 14px;
+  padding: 10px 16px;
   cursor: pointer;
-  transition: transform 120ms ease, opacity 120ms ease;
+  font-weight: 600;
+  transition: transform 100ms ease, opacity 120ms ease, box-shadow 120ms ease;
 }
 
 button:hover {
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
 }
 
 button:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 .btn-primary {
@@ -92,7 +118,7 @@ button:disabled {
 
 .btn-secondary {
   background: var(--accent-2);
-  color: #072017;
+  color: #041a11;
 }
 
 .btn-danger {
@@ -100,6 +126,13 @@ button:disabled {
   color: #fff;
 }
 
+.btn-ghost {
+  background: rgba(255,255,255,0.08);
+  color: #fefdf8;
+  border: 1px solid rgba(255,255,255,0.14);
+}
+
+/* ── Grid ───────────────────────────────── */
 .grid {
   display: grid;
   gap: 16px;
@@ -108,28 +141,52 @@ button:disabled {
 .admin-split {
   display: grid;
   gap: 16px;
-  grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
 }
 
+/* ── Table ──────────────────────────────── */
 .table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.table th,
-.table td {
+.table th {
   text-align: left;
-  padding: 10px;
-  border-bottom: 1px solid #e5ebdf;
-  font-size: 14px;
+  padding: 10px 12px;
+  border-bottom: 2px solid #e5ebdf;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  background: #f0f3ec;
 }
 
+.table td {
+  text-align: left;
+  padding: 11px 12px;
+  border-bottom: 1px solid #e5ebdf;
+  font-size: 14px;
+  vertical-align: top;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover td {
+  background: #f8fbf6;
+}
+
+/* ── Tags ───────────────────────────────── */
 .tag {
-  display: inline-block;
-  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .tag-ok {
@@ -147,24 +204,30 @@ button:disabled {
   color: var(--danger);
 }
 
+.tag-info {
+  background: #e0efff;
+  color: #1a5fa0;
+}
+
+/* ── Receipt ────────────────────────────── */
 .receipt-cell {
   display: grid;
   gap: 8px;
-  min-width: 210px;
-}
-
-.receipt-meta {
-  display: grid;
-  gap: 6px;
+  min-width: 200px;
 }
 
 .receipt-thumb {
-  width: 180px;
-  height: 120px;
+  width: 160px;
+  height: 108px;
   border-radius: 10px;
   object-fit: cover;
   border: 1px solid #d6dfd2;
   cursor: pointer;
+  transition: opacity 120ms;
+}
+
+.receipt-thumb:hover {
+  opacity: 0.85;
 }
 
 .receipt-thumb-fallback {
@@ -176,9 +239,56 @@ button:disabled {
   font-size: 12px;
 }
 
-@media (max-width: 860px) {
+/* ── Stat card ──────────────────────────── */
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stat-number {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* ── Page header ────────────────────────── */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 22px;
+}
+
+/* ── Empty state ────────────────────────── */
+.empty-state {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* ── Responsive ─────────────────────────── */
+@media (max-width: 900px) {
+  :root {
+    --sidebar-w: 0px;
+  }
+
   main {
-    padding: 14px;
+    margin-left: 0;
+    padding: 16px;
   }
 
   .admin-split {
@@ -193,12 +303,6 @@ button:disabled {
 }
 
 @keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

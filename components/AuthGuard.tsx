@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { getAccessToken } from "../lib/auth";
+import { Sidebar } from "./Sidebar";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
@@ -26,11 +27,19 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <main>
-        <div className="surface panel">Admin panel loading...</div>
-      </main>
+      <div className="page-shell">
+        <Sidebar />
+        <main>
+          <div className="surface panel" style={{ color: "#546573" }}>Yuklanmoqda...</div>
+        </main>
+      </div>
     );
   }
 
-  return <>{children}</>;
+  return (
+    <div className="page-shell">
+      <Sidebar />
+      {children}
+    </div>
+  );
 }
