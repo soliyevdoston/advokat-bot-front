@@ -157,7 +157,7 @@ export default function TariffsPage() {
 
   const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <label className="grid" style={{ gap: 6 }}>
-      <span style={{ fontSize: 13, color: "#4f6471", fontWeight: 600 }}>{label}</span>
+      <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>{label}</span>
       {children}
     </label>
   );
@@ -305,8 +305,8 @@ export default function TariffsPage() {
             <button className="btn-secondary" onClick={load}>Yangilash</button>
           </div>
 
-          {loading ? <p style={{ color: "#546573" }}>Yuklanmoqda...</p> : null}
-          {error ? <p style={{ color: "#c13838" }}>{error}</p> : null}
+          {loading ? <p style={{ color: "var(--muted)" }}>Yuklanmoqda...</p> : null}
+          {error ? <p style={{ color: "var(--danger)" }}>{error}</p> : null}
 
           {!loading && !error ? (
             sortedItems.length === 0 ? (

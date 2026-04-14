@@ -86,7 +86,7 @@ export default function SettingsPage() {
       <main className="admin-split">
         <section className="surface panel">
           <h2 style={{ marginBottom: 8 }}>Sozlama kalitlari</h2>
-          <p style={{ color: "#4f6471", fontSize: 14, marginTop: 0 }}>
+          <p style={{ color: "var(--muted)", fontSize: 14, marginTop: 0 }}>
             To'lov ma'lumotlari, AI yo'naltirish va advokat eskalatsiyasini boshqarish.
           </p>
 
@@ -135,7 +135,7 @@ export default function SettingsPage() {
           <h2 style={{ marginBottom: 16 }}>Sozlamani tahrirlash</h2>
           <div className="grid" style={{ gap: 12 }}>
             <label className="grid" style={{ gap: 6 }}>
-              <span style={{ fontSize: 13, color: "#4f6471", fontWeight: 600 }}>Kalit</span>
+              <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>Kalit</span>
               <input
                 className="input"
                 value={selectedKey}
@@ -145,7 +145,7 @@ export default function SettingsPage() {
             </label>
 
             <label className="grid" style={{ gap: 6 }}>
-              <span style={{ fontSize: 13, color: "#4f6471", fontWeight: 600 }}>Tavsif</span>
+              <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>Tavsif</span>
               <input
                 className="input"
                 value={description}
@@ -155,7 +155,7 @@ export default function SettingsPage() {
             </label>
 
             <label className="grid" style={{ gap: 6 }}>
-              <span style={{ fontSize: 13, color: "#4f6471", fontWeight: 600 }}>JSON qiymati</span>
+              <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>JSON qiymati</span>
               <textarea
                 className="input"
                 rows={18}

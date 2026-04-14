@@ -255,6 +255,43 @@ export interface EscalationItem {
   } | null;
 }
 
+export interface AdminRevenuePeriod {
+  count: number;
+  byCurrency: Record<string, number>;
+}
+
+export interface AdminRevenue {
+  today: AdminRevenuePeriod;
+  week: AdminRevenuePeriod;
+  month: AdminRevenuePeriod;
+  year: AdminRevenuePeriod;
+  custom?: AdminRevenuePeriod & { from?: string; to?: string };
+  dayStats: Array<{ date: string; amount: number; count: number; currency: string }>;
+}
+
+export interface PaymentHistoryItem {
+  id: string;
+  userId: string;
+  tariffId: string;
+  amountMinor: number;
+  currency: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  moderationNote: string | null;
+  createdAt: string;
+  user: {
+    id: string;
+    fullName: string | null;
+    username: string | null;
+    telegramId: string | null;
+    language: string;
+  };
+  tariff: {
+    id: string;
+    code: string;
+    titleI18n: Record<string, string>;
+  };
+}
+
 export interface SettingItem {
   id: string;
   key: string;

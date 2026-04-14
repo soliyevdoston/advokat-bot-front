@@ -154,21 +154,21 @@ export default function RequestsPage() {
 
         <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", marginBottom: 20 }}>
           <div className="surface panel stat-card">
-            <div className="stat-number" style={{ color: "#c13838" }}>{stats.pendingCount}</div>
+            <div className="stat-number" style={{ color: "var(--danger)" }}>{stats.pendingCount}</div>
             <div className="stat-label">To'lov kutayotganlar</div>
           </div>
           <div className="surface panel stat-card">
-            <div className="stat-number" style={{ color: "#9e6400" }}>{stats.waitingSlotCount}</div>
+            <div className="stat-number" style={{ color: "var(--warn)" }}>{stats.waitingSlotCount}</div>
             <div className="stat-label">Vaqt kutayotganlar</div>
           </div>
           <div className="surface panel stat-card">
-            <div className="stat-number" style={{ color: "#1f8f53" }}>{stats.upcomingCount}</div>
+            <div className="stat-number" style={{ color: "var(--ok)" }}>{stats.upcomingCount}</div>
             <div className="stat-label">Yaqin konsultatsiyalar</div>
           </div>
         </div>
 
-        {loading ? <div className="surface panel" style={{ color: "#546573" }}>Yuklanmoqda...</div> : null}
-        {error ? <div className="surface panel" style={{ color: "#c13838" }}>{error}</div> : null}
+        {loading ? <div className="surface panel" style={{ color: "var(--muted)" }}>Yuklanmoqda...</div> : null}
+        {error ? <div className="surface panel" style={{ color: "var(--danger)" }}>{error}</div> : null}
 
         {!loading && !error ? (
           <div className="surface panel">

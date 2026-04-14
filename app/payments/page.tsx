@@ -96,8 +96,8 @@ export default function PaymentsPage() {
           <button className="btn-secondary" onClick={load}>Yangilash</button>
         </div>
 
-        {loading ? <div className="surface panel" style={{ color: "#546573" }}>Yuklanmoqda...</div> : null}
-        {error ? <div className="surface panel" style={{ color: "#c13838" }}>{error}</div> : null}
+        {loading ? <div className="surface panel" style={{ color: "var(--muted)" }}>Yuklanmoqda...</div> : null}
+        {error ? <div className="surface panel" style={{ color: "var(--danger)" }}>{error}</div> : null}
 
         {!loading && !error ? (
           <div className="surface panel">
@@ -123,8 +123,8 @@ export default function PaymentsPage() {
                       <tr key={item.id}>
                         <td>
                           <div style={{ fontWeight: 700 }}>{item.user.fullName || item.user.username || item.user.id}</div>
-                          <div style={{ fontSize: 12, color: "#4f6471" }}>{item.user.telegramId ? `tg: ${item.user.telegramId}` : "-"}</div>
-                          <div style={{ fontSize: 12, color: "#4f6471" }}>id: {item.user.id.slice(0, 8)}...</div>
+                          <div style={{ fontSize: 12, color: "var(--muted)" }}>{item.user.telegramId ? `tg: ${item.user.telegramId}` : "-"}</div>
+                          <div style={{ fontSize: 12, color: "var(--muted)" }}>id: {item.user.id.slice(0, 8)}...</div>
                         </td>
                         <td>
                           <div style={{ fontFamily: "monospace", fontSize: 12 }}>{item.id.slice(0, 8)}...</div>
@@ -146,7 +146,7 @@ export default function PaymentsPage() {
                                 <div className="receipt-thumb receipt-thumb-fallback">Yuklanmoqda...</div>
                               )}
                               <div className="receipt-meta">
-                                <div style={{ fontSize: 12, color: "#4f6471" }}>
+                                <div style={{ fontSize: 12, color: "var(--muted)" }}>
                                   {formatDateTime(latestReceipt.createdAt)}
                                 </div>
                                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>

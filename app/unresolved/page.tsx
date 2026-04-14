@@ -121,7 +121,7 @@ export default function UnresolvedPage() {
           </div>
         </div>
 
-        {loading ? <div className="surface panel" style={{ color: "#546573" }}>Yuklanmoqda...</div> : null}
+        {loading ? <div className="surface panel" style={{ color: "var(--muted)" }}>Yuklanmoqda...</div> : null}
 
         <div className="surface panel">
           {items.length === 0 && !loading ? (
@@ -144,7 +144,7 @@ export default function UnresolvedPage() {
                   <tr key={item.id}>
                     <td>
                       <div style={{ fontWeight: 700 }}>{item.user.fullName || item.user.username || item.user.id.slice(0, 8)}</div>
-                      <div style={{ fontSize: 12, color: "#4f6471" }}>{item.user.telegramId ? `tg:${item.user.telegramId}` : item.user.phone || "–"}</div>
+                      <div style={{ fontSize: 12, color: "var(--muted)" }}>{item.user.telegramId ? `tg:${item.user.telegramId}` : item.user.phone || "–"}</div>
                     </td>
                     <td>
                       <span className={`tag ${item.status === "RESOLVED" || item.status === "CLOSED" ? "tag-ok" : "tag-danger"}`}>
@@ -212,7 +212,7 @@ export default function UnresolvedPage() {
           >
             <div className="surface panel" style={{ width: "100%", maxWidth: 460 }}>
               <h2 style={{ marginBottom: 6 }}>Meeting link yuborish</h2>
-              <p style={{ color: "#4f6471", marginTop: 0, marginBottom: 16, fontSize: 14 }}>
+              <p style={{ color: "var(--muted)", marginTop: 0, marginBottom: 16, fontSize: 14 }}>
                 Mijozga: <strong>{modal.telegramId}</strong>
                 {modal.slotTime ? <><br />Vaqt: {modal.slotTime}</> : null}
               </p>

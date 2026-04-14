@@ -40,14 +40,19 @@ function slotKey(d: Date, hour: number) {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  AVAILABLE: "#22c55e",
-  BOOKED: "#f59e0b",
-  BLOCKED: "#ef4444",
+  AVAILABLE: "#16a34a",
+  BOOKED: "#b45309",
+  BLOCKED: "#dc2626",
 };
 const STATUS_BG: Record<string, string> = {
-  AVAILABLE: "rgba(34,197,94,0.15)",
-  BOOKED: "rgba(245,158,11,0.15)",
-  BLOCKED: "rgba(239,68,68,0.12)",
+  AVAILABLE: "#f0fdf4",
+  BOOKED: "#fffbeb",
+  BLOCKED: "#fef2f2",
+};
+const STATUS_BORDER: Record<string, string> = {
+  AVAILABLE: "#bbf7d0",
+  BOOKED: "#fde68a",
+  BLOCKED: "#fecaca",
 };
 const STATUS_LABEL: Record<string, string> = {
   AVAILABLE: "Bo'sh",
@@ -212,7 +217,7 @@ export default function SlotsPage() {
             <h3 style={{ marginBottom: 12, fontSize: 15 }}>⚡ Ommaviy vaqt qo'shish</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div>
-                <div style={{ fontSize: 13, color: "#4f6471", fontWeight: 600, marginBottom: 8 }}>Kunlar (haftaning):</div>
+                <div style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600, marginBottom: 8 }}>Kunlar (haftaning):</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {DAYS_UZ.map((label, i) => (
                     <button
@@ -220,8 +225,8 @@ export default function SlotsPage() {
                       onClick={() => toggleBulkDay(i)}
                       style={{
                         padding: "6px 12px", borderRadius: 8, fontSize: 13, cursor: "pointer", border: "none",
-                        background: bulkDays.includes(i) ? "#ff8f2b" : "rgba(255,255,255,0.08)",
-                        color: bulkDays.includes(i) ? "#fff" : "#8fafc0",
+                        background: bulkDays.includes(i) ? "var(--ink)" : "var(--hover)",
+                        color: bulkDays.includes(i) ? "#fff" : "var(--ink-2)",
                         fontWeight: bulkDays.includes(i) ? 700 : 400,
                       }}
                     >{label}</button>
@@ -229,7 +234,7 @@ export default function SlotsPage() {
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 13, color: "#4f6471", fontWeight: 600, marginBottom: 8 }}>Soatlar:</div>
+                <div style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600, marginBottom: 8 }}>Soatlar:</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {WORK_HOURS.map(h => (
                     <button
@@ -237,8 +242,8 @@ export default function SlotsPage() {
                       onClick={() => toggleBulkHour(h)}
                       style={{
                         padding: "6px 10px", borderRadius: 8, fontSize: 13, cursor: "pointer", border: "none",
-                        background: bulkHours.includes(h) ? "#3b82f6" : "rgba(255,255,255,0.08)",
-                        color: bulkHours.includes(h) ? "#fff" : "#8fafc0",
+                        background: bulkHours.includes(h) ? "var(--ink)" : "var(--hover)",
+                        color: bulkHours.includes(h) ? "#fff" : "var(--ink-2)",
                         fontWeight: bulkHours.includes(h) ? 700 : 400,
                       }}
                     >{h}:00</button>
@@ -247,7 +252,7 @@ export default function SlotsPage() {
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12 }}>
-              <label style={{ fontSize: 13, color: "#4f6471", fontWeight: 600 }}>Necha hafta:</label>
+              <label style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>Necha hafta:</label>
               <input
                 type="number" min={1} max={8} value={bulkWeeks}
                 onChange={e => setBulkWeeks(Math.max(1, Math.min(8, Number(e.target.value))))}
@@ -273,16 +278,16 @@ export default function SlotsPage() {
         </div>
 
         {/* Legend */}
-        <div style={{ display: "flex", gap: 16, marginBottom: 12, fontSize: 13 }}>
+        <div style={{ display: "flex", gap: 16, marginBottom: 12, fontSize: 12, flexWrap: "wrap" }}>
           {Object.entries(STATUS_LABEL).map(([k, v]) => (
-            <div key={k} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <div style={{ width: 12, height: 12, borderRadius: 3, background: STATUS_COLOR[k] }} />
-              <span style={{ color: "#8fafc0" }}>{v}</span>
+            <div key={k} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <div style={{ width: 10, height: 10, borderRadius: 3, background: STATUS_COLOR[k] }} />
+              <span style={{ color: "var(--muted)" }}>{v}</span>
             </div>
           ))}
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{ width: 12, height: 12, borderRadius: 3, background: "rgba(255,255,255,0.05)", border: "1px dashed rgba(255,255,255,0.15)" }} />
-            <span style={{ color: "#8fafc0" }}>Bo'sh (bosish bilan qo'shish)</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <div style={{ width: 10, height: 10, borderRadius: 3, background: "var(--hover)", border: "1px dashed var(--border-2)" }} />
+            <span style={{ color: "var(--muted)" }}>Bosib qo'shish</span>
           </div>
         </div>
 
@@ -290,10 +295,10 @@ export default function SlotsPage() {
         <div className="surface panel" style={{ padding: 0, overflow: "hidden" }}>
           <div style={{
             display: "grid",
-            gridTemplateColumns: "56px repeat(7, 1fr)",
-            borderBottom: "1px solid rgba(255,255,255,0.07)",
+            gridTemplateColumns: "52px repeat(7, 1fr)",
+            borderBottom: "1px solid var(--border)",
           }}>
-            <div style={{ padding: "10px 8px", fontSize: 12, color: "#4f6471" }} />
+            <div style={{ padding: "10px 8px", fontSize: 12, color: "var(--muted)" }} />
             {weekDays.map((d, i) => {
               const isToday = isSameDay(d, new Date());
               return (
@@ -304,9 +309,9 @@ export default function SlotsPage() {
                     textAlign: "center",
                     fontWeight: isToday ? 800 : 600,
                     fontSize: 13,
-                    color: isToday ? "#ff8f2b" : "#c8d8e0",
-                    borderLeft: "1px solid rgba(255,255,255,0.07)",
-                    background: isToday ? "rgba(255,143,43,0.06)" : "transparent",
+                    color: isToday ? "var(--ink)" : "var(--ink-2)",
+                    borderLeft: "1px solid var(--border)",
+                    background: isToday ? "var(--hover)" : "transparent",
                   }}
                 >
                   <div>{DAYS_UZ[i]}</div>
@@ -321,17 +326,17 @@ export default function SlotsPage() {
               key={hour}
               style={{
                 display: "grid",
-                gridTemplateColumns: "56px repeat(7, 1fr)",
-                borderBottom: "1px solid rgba(255,255,255,0.05)",
+                gridTemplateColumns: "52px repeat(7, 1fr)",
+                borderBottom: "1px solid var(--border)",
               }}
             >
               <div style={{
                 padding: "8px 4px",
                 textAlign: "center",
-                fontSize: 12,
-                color: "#4f6471",
+                fontSize: 11,
+                color: "var(--muted)",
                 fontWeight: 600,
-                borderRight: "1px solid rgba(255,255,255,0.07)",
+                borderRight: "1px solid var(--border)",
               }}>
                 {hour}:00
               </div>
@@ -345,19 +350,19 @@ export default function SlotsPage() {
                     key={di}
                     onClick={() => slot ? undefined : openAdd(day, hour)}
                     style={{
-                      borderLeft: "1px solid rgba(255,255,255,0.05)",
-                      minHeight: 48,
+                      borderLeft: "1px solid var(--border)",
+                      minHeight: 46,
                       padding: 4,
                       cursor: slot || past ? "default" : "pointer",
                       background: slot
                         ? STATUS_BG[slot.status]
                         : past
-                          ? "rgba(0,0,0,0.08)"
+                          ? "#f9f9fa"
                           : "transparent",
-                      transition: "background 0.15s",
+                      transition: "background 0.12s",
                     }}
                     onMouseEnter={e => {
-                      if (!slot && !past) (e.currentTarget as HTMLDivElement).style.background = "rgba(255,143,43,0.08)";
+                      if (!slot && !past) (e.currentTarget as HTMLDivElement).style.background = "var(--hover)";
                     }}
                     onMouseLeave={e => {
                       if (!slot && !past) (e.currentTarget as HTMLDivElement).style.background = "transparent";
@@ -373,7 +378,7 @@ export default function SlotsPage() {
                           {STATUS_LABEL[slot.status]}
                         </div>
                         {slot.note && (
-                          <div style={{ color: "#8fafc0", fontSize: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          <div style={{ color: "var(--muted)", fontSize: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {slot.note}
                           </div>
                         )}
@@ -381,9 +386,9 @@ export default function SlotsPage() {
                           <button
                             onClick={e => { e.stopPropagation(); blockSlot(slot.id); }}
                             style={{
-                              marginTop: 4, fontSize: 10, padding: "2px 6px",
-                              background: "rgba(239,68,68,0.2)", color: "#ef4444",
-                              border: "none", borderRadius: 4, cursor: "pointer",
+                              marginTop: 4, fontSize: 10, padding: "2px 5px",
+                              background: "var(--danger-bg)", color: "var(--danger)",
+                              border: "1px solid #fecaca", borderRadius: 4, cursor: "pointer",
                             }}
                           >
                             Blok
@@ -392,9 +397,9 @@ export default function SlotsPage() {
                       </div>
                     ) : past ? null : (
                       <div style={{
-                        width: "100%", height: "100%", minHeight: 40,
+                        width: "100%", height: "100%", minHeight: 38,
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        color: "rgba(255,255,255,0.1)", fontSize: 18,
+                        color: "var(--border-2)", fontSize: 16, fontWeight: 300,
                       }}>+</div>
                     )}
                   </div>
@@ -415,12 +420,12 @@ export default function SlotsPage() {
           >
             <div className="surface panel" style={{ width: "100%", maxWidth: 400 }}>
               <h2 style={{ marginBottom: 4, fontSize: 16 }}>Yangi vaqt qo'shish</h2>
-              <p style={{ color: "#4f6471", marginTop: 0, marginBottom: 16, fontSize: 14 }}>
+              <p style={{ color: "var(--muted)", marginTop: 0, marginBottom: 16, fontSize: 14 }}>
                 📅 {DAYS_UZ[adding.day.getDay() === 0 ? 6 : adding.day.getDay() - 1]}, {adding.day.getDate()} {MONTHS_UZ[adding.day.getMonth()]} — {adding.hour}:00
               </p>
               <div className="grid" style={{ gap: 12 }}>
                 <label className="grid" style={{ gap: 6 }}>
-                  <span style={{ fontSize: 13, color: "#4f6471", fontWeight: 600 }}>Davomiyligi (daqiqa)</span>
+                  <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>Davomiyligi (daqiqa)</span>
                   <select
                     value={duration}
                     onChange={e => setDuration(Number(e.target.value))}
@@ -433,7 +438,7 @@ export default function SlotsPage() {
                   </select>
                 </label>
                 <label className="grid" style={{ gap: 6 }}>
-                  <span style={{ fontSize: 13, color: "#4f6471", fontWeight: 600 }}>Izoh (ixtiyoriy)</span>
+                  <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>Izoh (ixtiyoriy)</span>
                   <input
                     className="input"
                     value={note}

@@ -14,9 +14,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (getAccessToken()) {
-      router.replace("/dashboard");
-    }
+    if (getAccessToken()) router.replace("/dashboard");
   }, [router]);
 
   const onSubmit = async (e: FormEvent) => {
@@ -35,74 +33,95 @@ export default function LoginPage() {
   };
 
   return (
-    <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: "20px" }}>
-      <div style={{ width: "100%", maxWidth: 400 }}>
-        {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
+    <main style={{
+      minHeight: "100vh",
+      display: "grid",
+      placeItems: "center",
+      padding: "20px",
+      background: "#fafafa",
+    }}>
+      <div style={{ width: "100%", maxWidth: 380 }}>
+        {/* Brand */}
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
           <div style={{
-            width: 56, height: 56,
-            borderRadius: "50%",
-            background: "rgba(255,143,43,0.15)",
-            border: "2px solid rgba(255,143,43,0.4)",
+            width: 48, height: 48,
+            borderRadius: "12px",
+            background: "#0a0a0a",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 22, margin: "0 auto 16px"
+            fontSize: 22, margin: "0 auto 16px",
           }}>
             ⚖️
           </div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>
+          <div style={{ fontSize: 11, color: "#71717a", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6, fontWeight: 700 }}>
             Admin Panel
           </div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: "#ff8f2b", lineHeight: 1.2 }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: "#0a0a0a", letterSpacing: "-0.02em" }}>
             Advokat Turdimotov M.M.
           </div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", marginTop: 4 }}>
+          <div style={{ fontSize: 13, color: "#71717a", marginTop: 4 }}>
             Huquqiy maslahat xizmati
           </div>
         </div>
 
-        <div className="surface panel">
-          <h2 style={{ marginBottom: 4, fontSize: 17 }}>Kirish</h2>
-          <p style={{ color: "#4f6471", marginTop: 0, marginBottom: 20, fontSize: 14 }}>
-            Moderator yoki admin hisobingiz bilan kiring
+        {/* Card */}
+        <div style={{
+          background: "#fff",
+          border: "1px solid #e4e4e7",
+          borderRadius: 12,
+          padding: 24,
+          boxShadow: "0 1px 3px rgba(0,0,0,.08)",
+        }}>
+          <h2 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 700, color: "#0a0a0a" }}>Kirish</h2>
+          <p style={{ color: "#71717a", margin: "0 0 20px", fontSize: 13 }}>
+            Admin hisobingiz bilan kiring
           </p>
+
           <form className="grid" onSubmit={onSubmit} style={{ gap: 14 }}>
-            <label className="grid" style={{ gap: 6 }}>
-              <span style={{ fontSize: 13, color: "#4f6471", fontWeight: 600 }}>Email</span>
+            <label className="grid" style={{ gap: 5 }}>
+              <span style={{ fontSize: 12, color: "#3f3f46", fontWeight: 600 }}>Email</span>
               <input
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 className="input"
                 type="email"
                 required
                 autoComplete="username"
+                placeholder="admin@advokat.local"
               />
             </label>
 
-            <label className="grid" style={{ gap: 6 }}>
-              <span style={{ fontSize: 13, color: "#4f6471", fontWeight: 600 }}>Parol</span>
+            <label className="grid" style={{ gap: 5 }}>
+              <span style={{ fontSize: 12, color: "#3f3f46", fontWeight: 600 }}>Parol</span>
               <input
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 className="input"
                 type="password"
                 required
                 autoComplete="current-password"
+                placeholder="••••••••"
               />
             </label>
 
-            {error ? (
+            {error && (
               <div style={{
-                background: "#ffe2e2",
-                color: "#c13838",
-                borderRadius: 10,
-                padding: "10px 14px",
-                fontSize: 14
+                background: "#fef2f2",
+                color: "#dc2626",
+                border: "1px solid #fecaca",
+                borderRadius: 8,
+                padding: "9px 12px",
+                fontSize: 13,
               }}>
                 {error}
               </div>
-            ) : null}
+            )}
 
-            <button className="btn-primary" disabled={loading} type="submit" style={{ marginTop: 4, padding: "12px 16px" }}>
+            <button
+              className="btn-primary"
+              disabled={loading}
+              type="submit"
+              style={{ padding: "11px 16px", marginTop: 2, width: "100%", fontSize: 14 }}
+            >
               {loading ? "Kirilmoqda..." : "Kirish"}
             </button>
           </form>

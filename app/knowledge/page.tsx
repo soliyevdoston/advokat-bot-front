@@ -247,7 +247,7 @@ export default function KnowledgePage() {
                   sortedCategories.map((item) => (
                     <tr key={item.id}>
                       <td>{item.title}</td>
-                      <td style={{ fontSize: 13, color: "#4f6471" }}>{item.slug}</td>
+                      <td style={{ fontSize: 13, color: "var(--muted)" }}>{item.slug}</td>
                       <td>
                         <span className={`tag ${item.isActive ? "tag-ok" : "tag-danger"}`}>
                           {item.isActive ? "Faol" : "Nofaol"}
@@ -426,7 +426,7 @@ export default function KnowledgePage() {
                     <tr key={item.id}>
                       <td style={{ maxWidth: 280 }}>
                         <div style={{ fontWeight: 700 }}>{item.title}</div>
-                        <div style={{ fontSize: 12, color: "#4f6471" }}>{item.question.slice(0, 100)}...</div>
+                        <div style={{ fontSize: 12, color: "var(--muted)" }}>{item.question.slice(0, 100)}...</div>
                       </td>
                       <td>{item.category?.title || "–"}</td>
                       <td>
@@ -491,7 +491,7 @@ export default function KnowledgePage() {
             <h2 style={{ marginBottom: 0 }}>AI javob bermagan savollar (so'nggi 30 kun)</h2>
             <button className="btn-secondary" onClick={load}>Yangilash</button>
           </div>
-          <p style={{ marginTop: 0, color: "#4f6471", fontSize: 14 }}>
+          <p style={{ marginTop: 0, color: "var(--muted)", fontSize: 14 }}>
             Foydalanuvchilar ko'p bergan, ammo AI to'liq javob bera olmagan savollar.
           </p>
           {unanswered.length === 0 ? (
@@ -513,7 +513,7 @@ export default function KnowledgePage() {
                   <tr key={`${item.normalized}-${item.conversationId}`}>
                     <td style={{ maxWidth: 380 }}>
                       <div>{item.question}</div>
-                      <div style={{ fontSize: 12, color: "#4f6471" }}>{item.normalized}</div>
+                      <div style={{ fontSize: 12, color: "var(--muted)" }}>{item.normalized}</div>
                     </td>
                     <td><span className="tag tag-info">{item.count}</span></td>
                     <td style={{ fontSize: 13 }}>{formatDateTime(item.lastAskedAt)}</td>

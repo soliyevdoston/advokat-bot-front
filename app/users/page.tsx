@@ -66,8 +66,8 @@ export default function UsersPage() {
           <button className="btn-primary" type="submit">Qidirish</button>
         </form>
 
-        {loading ? <div className="surface panel" style={{ color: "#546573" }}>Yuklanmoqda...</div> : null}
-        {error ? <div className="surface panel" style={{ color: "#c13838" }}>{error}</div> : null}
+        {loading ? <div className="surface panel" style={{ color: "var(--muted)" }}>Yuklanmoqda...</div> : null}
+        {error ? <div className="surface panel" style={{ color: "var(--danger)" }}>{error}</div> : null}
 
         {!loading && !error ? (
           <div className="surface panel">
@@ -91,11 +91,11 @@ export default function UsersPage() {
                     <tr key={user.id}>
                       <td>
                         <div style={{ fontWeight: 700 }}>{user.fullName || user.username || user.id.slice(0, 8)}</div>
-                        <div style={{ fontSize: 12, color: "#4f6471" }}>id: {user.id.slice(0, 8)}...</div>
+                        <div style={{ fontSize: 12, color: "var(--muted)" }}>id: {user.id.slice(0, 8)}...</div>
                       </td>
                       <td>
                         <div>{user.phone || "–"}</div>
-                        <div style={{ fontSize: 12, color: "#4f6471" }}>{user.telegramId ? `tg:${user.telegramId}` : "–"}</div>
+                        <div style={{ fontSize: 12, color: "var(--muted)" }}>{user.telegramId ? `tg:${user.telegramId}` : "–"}</div>
                       </td>
                       <td>{user.language}</td>
                       <td>{user.role}</td>

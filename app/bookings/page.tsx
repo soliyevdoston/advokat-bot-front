@@ -123,8 +123,8 @@ export default function BookingsPage() {
           <button className="btn-secondary" onClick={load}>Yangilash</button>
         </div>
 
-        {loading ? <div className="surface panel" style={{ color: "#546573" }}>Yuklanmoqda...</div> : null}
-        {error ? <div className="surface panel" style={{ color: "#c13838" }}>{error}</div> : null}
+        {loading ? <div className="surface panel" style={{ color: "var(--muted)" }}>Yuklanmoqda...</div> : null}
+        {error ? <div className="surface panel" style={{ color: "var(--danger)" }}>{error}</div> : null}
 
         {!loading && !error ? (
           <div className="surface panel">
@@ -151,11 +151,11 @@ export default function BookingsPage() {
                         <div style={{ fontWeight: 700 }}>
                           {item.user.fullName || item.user.username || item.user.id}
                         </div>
-                        <div style={{ fontSize: 12, color: "#4f6471" }}>bron: {item.id.slice(0, 8)}...</div>
+                        <div style={{ fontSize: 12, color: "var(--muted)" }}>bron: {item.id.slice(0, 8)}...</div>
                       </td>
                       <td>
                         <div>{item.user.telegramId ? `tg: ${item.user.telegramId}` : "tg: –"}</div>
-                        <div style={{ fontSize: 12, color: "#4f6471" }}>
+                        <div style={{ fontSize: 12, color: "var(--muted)" }}>
                           {item.user.phone || "–"}
                         </div>
                       </td>
@@ -176,7 +176,7 @@ export default function BookingsPage() {
                             Link yuborish
                           </button>
                         ) : (
-                          <span style={{ color: "#4f6471", fontSize: 13 }}>tg yo'q</span>
+                          <span style={{ color: "var(--muted)", fontSize: 13 }}>tg yo'q</span>
                         )}
                       </td>
                     </tr>
@@ -198,7 +198,7 @@ export default function BookingsPage() {
           >
             <div className="surface panel" style={{ width: "100%", maxWidth: 460 }}>
               <h2 style={{ marginBottom: 6 }}>Meeting link yuborish</h2>
-              <p style={{ color: "#4f6471", marginTop: 0, marginBottom: 16, fontSize: 14 }}>
+              <p style={{ color: "var(--muted)", marginTop: 0, marginBottom: 16, fontSize: 14 }}>
                 Mijozga: <strong>{modal.telegramId}</strong><br />
                 Vaqt: {modal.slotTime}
               </p>

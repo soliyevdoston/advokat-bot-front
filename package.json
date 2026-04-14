@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3000",
-    "build": "next build",
-    "start": "next start -p ${PORT:-3000}",
+    "dev": "sh -c 'node scripts/fix-next-runtime.mjs --watch & next dev -p 3000'",
+    "build": "next build && node scripts/fix-next-runtime.mjs",
+    "start": "node scripts/fix-next-runtime.mjs && next start -p ${PORT:-3000}",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
