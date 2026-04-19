@@ -8,7 +8,11 @@ import type { SettingItem } from "../../types";
 const IMPORTANT_KEYS = [
   "payment_details",
   "ai_routing",
+  "ai_clarification",
   "ai_voice",
+  "ai_models",
+  "ai_openai_policy",
+  "ai_limits",
   "ai_disclaimer",
   "advocate_redirect"
 ];
@@ -16,7 +20,11 @@ const IMPORTANT_KEYS = [
 const keyLabel: Record<string, string> = {
   payment_details: "To'lov ma'lumotlari",
   ai_routing: "AI yo'naltirish",
+  ai_clarification: "AI aniqlik filtri",
   ai_voice: "AI uslubi",
+  ai_models: "AI modellari",
+  ai_openai_policy: "AI chaqirish siyosati",
+  ai_limits: "AI token limitlari",
   ai_disclaimer: "AI ogohlantirish",
   advocate_redirect: "Advokat yo'naltirish"
 };
