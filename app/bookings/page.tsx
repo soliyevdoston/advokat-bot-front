@@ -8,6 +8,7 @@ import { formatDateTime } from "../../lib/format";
 type BookingScheduleItem = {
   id: string;
   status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
+  meetLink?: string | null;
   user: {
     id: string;
     fullName: string | null;
@@ -140,7 +141,8 @@ export default function BookingsPage() {
                     <th>Tarif</th>
                     <th>Holat</th>
                     <th>Izoh</th>
-                    <th>Meeting link</th>
+                    <th>Meet Link</th>
+                    <th>Meeting link yuborish</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -166,6 +168,20 @@ export default function BookingsPage() {
                         </span>
                       </td>
                       <td>{item.slot.note || "–"}</td>
+                      <td>
+                        {item.meetLink ? (
+                          <a
+                            href={item.meetLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ fontSize: 13, color: "var(--primary)", wordBreak: "break-all" }}
+                          >
+                            {item.meetLink}
+                          </a>
+                        ) : (
+                          <span style={{ color: "var(--muted)", fontSize: 13 }}>—</span>
+                        )}
+                      </td>
                       <td>
                         {item.user.telegramId ? (
                           <button

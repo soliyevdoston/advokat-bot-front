@@ -76,7 +76,22 @@ export interface Slot {
 
 export interface Booking {
   id: string;
+  meetLink?: string | null;
   createdAt: string;
+  slot?: {
+    startsAt: string;
+    endsAt: string;
+    timezone: string;
+  };
+  user?: {
+    fullName: string | null;
+    username: string | null;
+    phone: string | null;
+  };
+  payment?: {
+    tariff: { code: string };
+  };
+  status?: string;
 }
 
 export interface Paginated<T> {
