@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
 import { api } from "../../lib/api";
 import { formatDateTime, formatMoney } from "../../lib/format";
+import { WaveChart, type WavePoint } from "../../components/WaveChart";
 import type {
   AdminAnalytics,
   AdminDashboard,
@@ -122,28 +123,34 @@ function UpcomingBookingsWidget({ items }: { items: Booking[] }) {
   );
 }
 
-function MiniBar({ dayStats }: { dayStats: AdminRevenue["dayStats"] }) {
-  const max = Math.max(...dayStats.map((d) => d.amount), 1);
-  if (dayStats.every((d) => d.amount === 0)) return <p style={{ color: "var(--muted)", fontSize: 13 }}>Ma'lumot yo'q</p>;
+function MetricCard({
+  label,
+  value,
+  data,
+  color
+}: {
+  label: string;
+  value: number | string;
+  data: WavePoint[];
+  color: string;
+}) {
+  const series = data.length > 0 ? data : [
+    { label: "", value: 0 },
+    { label: "", value: 0 }
+  ];
   return (
-    <div style={{ overflowX: "auto" }}>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 64, minWidth: dayStats.length * 16 }}>
-        {dayStats.map((d) => (
-          <div
-            key={d.date}
-            title={`${d.date}: ${formatMoney(d.amount, d.currency || "UZS")} (${d.count} ta)`}
-            style={{
-              flex: "0 0 12px",
-              height: `${Math.max((d.amount / max) * 100, d.amount > 0 ? 5 : 1)}%`,
-              background: d.amount > 0 ? "var(--ink)" : "var(--border)",
-              borderRadius: 2,
-            }}
-          />
-        ))}
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4, fontSize: 10, color: "var(--muted)" }}>
-        <span>{dayStats[0]?.date}</span>
-        <span>{dayStats[dayStats.length - 1]?.date}</span>
+    <div className="metric-card">
+      <div className="metric-card-label">{label}</div>
+      <div className="metric-card-value count-up-anim">{value}</div>
+      <div className="metric-card-spark">
+        <WaveChart
+          data={series}
+          height={56}
+          color={color}
+          gradientFrom={color}
+          gradientTo={color}
+          ariaLabel={`${label} sparkline`}
+        />
       </div>
     </div>
   );
@@ -481,6 +488,33 @@ export default function DashboardPage() {
     );
   }
 
+  // Build wave data series from existing revenue + analytics shape
+  const revenueWave: WavePoint[] = (revenue?.dayStats ?? []).map((d) => ({
+    label: d.date.slice(5),
+    value: d.amount / 100,
+    caption: `${d.date} · ${d.count} ta to'lov`
+  }));
+  const questionsWave: WavePoint[] = (analytics?.dayStats ?? []).map((d) => ({
+    label: d.date.slice(5),
+    value: d.questions,
+    caption: `${d.date} · ${d.questions} ta savol`
+  }));
+  const approvedWave: WavePoint[] = (analytics?.dayStats ?? []).map((d) => ({
+    label: d.date.slice(5),
+    value: d.approvedPayments,
+    caption: `${d.date} · ${d.approvedPayments} ta to'lov`
+  }));
+  const usersTrendWave: WavePoint[] = revenueWave.map((d, i) => ({
+    label: d.label,
+    value: Math.round(stats.totalUsers * (i + 1) / Math.max(revenueWave.length, 1)),
+    caption: d.caption
+  }));
+
+  const todayRevenue = revenue?.today;
+  const todayRevenueText = todayRevenue ? formatRevAmount(todayRevenue.byCurrency) : "—";
+  const monthRevenueText = revenue ? formatRevAmount(revenue.month.byCurrency) : "—";
+  const yearRevenueText = revenue ? formatRevAmount(revenue.year.byCurrency) : "—";
+
   return (
     <AuthGuard>
       <main>
@@ -490,131 +524,177 @@ export default function DashboardPage() {
           <button className="btn-secondary" onClick={load}>Yangilash</button>
         </div>
 
-        {/* ── 0. Yaqin uchrashuvlar ── */}
+        {/* ── HERO ── */}
+        <section className="dash-hero">
+          <div className="dash-hero-grid">
+            <div>
+              <p className="dash-hero-eyebrow">Bugungi daromad</p>
+              <p className="dash-hero-amount count-up-anim">{todayRevenueText}</p>
+              <p className="dash-hero-sub">
+                {todayRevenue?.count ?? 0} ta tasdiqlangan to'lov · {analytics.questions.today} ta savol
+              </p>
+            </div>
+            <div className="dash-hero-stats">
+              <div className="dash-hero-stat">
+                <div className="dash-hero-stat-value">{monthRevenueText}</div>
+                <div className="dash-hero-stat-label">Bu oy</div>
+              </div>
+              <div className="dash-hero-stat">
+                <div className="dash-hero-stat-value">{yearRevenueText}</div>
+                <div className="dash-hero-stat-label">Bu yil</div>
+              </div>
+              <div className="dash-hero-stat">
+                <div className="dash-hero-stat-value">{stats.totalUsers}</div>
+                <div className="dash-hero-stat-label">Mijoz</div>
+              </div>
+            </div>
+          </div>
+          <div className="dash-hero-wave">
+            <WaveChart
+              data={revenueWave}
+              height={110}
+              color="#7aa2ff"
+              gradientFrom="#7aa2ff"
+              gradientTo="#7aa2ff"
+              ariaLabel="So'nggi 30 kunlik daromad to'lqini"
+            />
+          </div>
+        </section>
+
+        {/* ── Yaqin uchrashuvlar ── */}
         <UpcomingBookingsWidget items={upcoming} />
 
-        {/* ── 1. Daromad ── */}
-        <div className="surface panel" style={{ marginBottom: 20 }}>
-          <SectionTitle>Daromad — tasdiqlangan to'lovlar</SectionTitle>
-          {revenue ? (
-            <>
-              <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12, marginBottom: 20 }}>
-                {(["today", "week", "month", "year"] as const).map((p) => {
-                  const lbl = { today: "Bugun", week: "Hafta", month: "Oy", year: "Yil" }[p];
-                  const d = revenue[p];
-                  return (
-                    <StatCard
-                      key={p}
-                      label={lbl}
-                      value={formatRevAmount(d.byCurrency)}
-                      color="var(--ok)"
-                      sub={`${d.count} ta to'lov`}
-                    />
-                  );
-                })}
+        {/* ── Metric cards with sparklines ── */}
+        <div
+          className="grid"
+          style={{
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: 14,
+            marginBottom: 24
+          }}
+        >
+          <MetricCard
+            label="Mijozlar"
+            value={stats.totalUsers}
+            data={usersTrendWave}
+            color="#0a0a0a"
+          />
+          <MetricCard
+            label="Bugungi savollar"
+            value={stats.todayQuestions}
+            data={questionsWave}
+            color="#1d4ed8"
+          />
+          <MetricCard
+            label="Tasdiqlangan to'lovlar"
+            value={stats.approvedPayments}
+            data={approvedWave}
+            color="#16a34a"
+          />
+          <MetricCard
+            label="Qabul so'rovlari"
+            value={stats.unresolvedConversations}
+            data={questionsWave}
+            color="#b45309"
+          />
+        </div>
+
+        {/* ── Daromad to'lqini (30 kun) ── */}
+        <div className="chart-card" style={{ marginBottom: 18 }}>
+          <div className="chart-card-head">
+            <div>
+              <h3 className="chart-card-title">Daromad · So'nggi 30 kun</h3>
+              <div className="chart-card-amount" style={{ marginTop: 6 }}>
+                {monthRevenueText}
               </div>
-              <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8 }}>So'nggi 30 kun grafigi</div>
-              <MiniBar dayStats={revenue.dayStats} />
-            </>
-          ) : (
-            <p style={{ color: "var(--muted)", fontSize: 13 }}>Ma'lumot yuklanmadi</p>
-          )}
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                {revenue?.month.count ?? 0} ta to'lov
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 14, fontSize: 12, color: "var(--muted)" }}>
+              <span>
+                <strong style={{ color: "var(--ok)", fontSize: 16 }}>
+                  {revenue ? formatRevAmount(revenue.week.byCurrency) : "—"}
+                </strong>
+                <span style={{ marginLeft: 6 }}>shu hafta</span>
+              </span>
+            </div>
+          </div>
+          <WaveChart
+            data={revenueWave}
+            height={220}
+            color="#16a34a"
+            showAxis
+            showDots={revenueWave.length <= 14}
+            formatValue={(v) => formatMoney(Math.round(v * 100), "UZS")}
+            ariaLabel="Daromad grafigi"
+          />
         </div>
 
-        {/* ── 2. Asosiy ko'rsatkichlar ── */}
+        {/* ── Savollar to'lqini ── */}
+        <div className="chart-card" style={{ marginBottom: 18 }}>
+          <div className="chart-card-head">
+            <div>
+              <h3 className="chart-card-title">Savollar · So'nggi 30 kun</h3>
+              <div className="chart-card-amount" style={{ marginTop: 6 }}>
+                {analytics.questions.month}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                bugun {analytics.questions.today} · hafta {analytics.questions.week}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 14, fontSize: 12, color: "var(--muted)" }}>
+              <span>
+                Qoniqmaslik:{" "}
+                <strong style={{ color: "var(--danger)", fontSize: 14 }}>
+                  {analytics.satisfaction.unsatisfiedRate}%
+                </strong>
+              </span>
+            </div>
+          </div>
+          <WaveChart
+            data={questionsWave}
+            height={200}
+            color="#1d4ed8"
+            showAxis
+            showDots={questionsWave.length <= 14}
+            ariaLabel="Savollar grafigi"
+          />
+        </div>
+
+        {/* ── Compact metric grid (rest) ── */}
         <div className="surface panel" style={{ marginBottom: 20 }}>
-          <SectionTitle>Asosiy ko'rsatkichlar</SectionTitle>
-          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 12 }}>
-            <StatCard label="Jami mijozlar"           value={stats.totalUsers} />
-            <StatCard label="Bugungi savollar"        value={stats.todayQuestions} />
-            <StatCard label="Tasdiqlangan to'lovlar"  value={stats.approvedPayments}        color="var(--ok)" />
-            <StatCard label="Kutilayotgan to'lovlar"  value={stats.pendingPaymentApprovals} color="var(--warn)" />
-            <StatCard label="Rad etilgan to'lovlar"   value={stats.rejectedPayments}        color="var(--danger)" />
-            <StatCard label="Qabul so'rovlari"        value={stats.unresolvedConversations} color="var(--danger)" />
-            <StatCard label="Qoniqmaganlar"           value={stats.unsatisfiedCount}        color="var(--danger)" />
-            <StatCard label="Jami pullik so'rovlar"   value={stats.totalPaidRequests} />
-            <StatCard label="Advokatlarga yo'naltirilgan" value={stats.redirectedToAdvocate} />
-            <StatCard label="Bilim bazasi"            value={stats.knowledgeEntries} />
-            <StatCard label="Tariflar"                value={stats.tariffs} />
+          <SectionTitle>Boshqa ko'rsatkichlar</SectionTitle>
+          <div
+            className="grid"
+            style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}
+          >
+            <StatCard
+              label="Kutilayotgan to'lovlar"
+              value={stats.pendingPaymentApprovals}
+              color="var(--warn)"
+            />
+            <StatCard
+              label="Rad etilgan to'lovlar"
+              value={stats.rejectedPayments}
+              color="var(--danger)"
+            />
+            <StatCard
+              label="Qoniqmagan mijozlar"
+              value={stats.unsatisfiedCount}
+              color="var(--danger)"
+            />
+            <StatCard label="Jami pullik so'rovlar" value={stats.totalPaidRequests} />
+            <StatCard
+              label="Advokatga yo'naltirilgan"
+              value={stats.redirectedToAdvocate}
+            />
+            <StatCard label="Bilim bazasi" value={stats.knowledgeEntries} />
+            <StatCard label="Tariflar" value={stats.tariffs} />
           </div>
         </div>
 
-        {/* ── 3. Savollar + To'lovlar + Qoniqish ── */}
-        <div className="surface panel" style={{ marginBottom: 20 }}>
-          <SectionTitle>30 kunlik tahlil</SectionTitle>
-          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 24 }}>
-
-            {/* Savollar */}
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>Savollar</div>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                <tbody>
-                  {[
-                    ["Bugun", analytics.questions.today],
-                    ["Hafta", analytics.questions.week],
-                    ["Oy",    analytics.questions.month],
-                  ].map(([lbl, val]) => (
-                    <tr key={String(lbl)}>
-                      <td style={{ padding: "5px 0", color: "var(--muted)" }}>{lbl}</td>
-                      <td style={{ padding: "5px 0", fontWeight: 700, textAlign: "right" }}>{val}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* To'lovlar — bugun */}
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>To'lovlar · Bugun</div>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                <tbody>
-                  <tr><td style={{ padding: "5px 0", color: "var(--muted)" }}>Kutilmoqda</td>  <td style={{ padding: "5px 0", fontWeight: 700, textAlign: "right", color: "var(--warn)" }}>{analytics.payments.today.pending}</td></tr>
-                  <tr><td style={{ padding: "5px 0", color: "var(--muted)" }}>Tasdiqlangan</td><td style={{ padding: "5px 0", fontWeight: 700, textAlign: "right", color: "var(--ok)" }}>{analytics.payments.today.approved}</td></tr>
-                  <tr><td style={{ padding: "5px 0", color: "var(--muted)" }}>Rad etilgan</td> <td style={{ padding: "5px 0", fontWeight: 700, textAlign: "right", color: "var(--danger)" }}>{analytics.payments.today.rejected}</td></tr>
-                </tbody>
-              </table>
-            </div>
-
-            {/* To'lovlar — hafta */}
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>To'lovlar · Hafta</div>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                <tbody>
-                  <tr><td style={{ padding: "5px 0", color: "var(--muted)" }}>Kutilmoqda</td>  <td style={{ padding: "5px 0", fontWeight: 700, textAlign: "right", color: "var(--warn)" }}>{analytics.payments.week.pending}</td></tr>
-                  <tr><td style={{ padding: "5px 0", color: "var(--muted)" }}>Tasdiqlangan</td><td style={{ padding: "5px 0", fontWeight: 700, textAlign: "right", color: "var(--ok)" }}>{analytics.payments.week.approved}</td></tr>
-                  <tr><td style={{ padding: "5px 0", color: "var(--muted)" }}>Rad etilgan</td> <td style={{ padding: "5px 0", fontWeight: 700, textAlign: "right", color: "var(--danger)" }}>{analytics.payments.week.rejected}</td></tr>
-                </tbody>
-              </table>
-            </div>
-
-            {/* To'lovlar — oy */}
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>To'lovlar · Oy</div>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                <tbody>
-                  <tr><td style={{ padding: "5px 0", color: "var(--muted)" }}>Kutilmoqda</td>  <td style={{ padding: "5px 0", fontWeight: 700, textAlign: "right", color: "var(--warn)" }}>{analytics.payments.month.pending}</td></tr>
-                  <tr><td style={{ padding: "5px 0", color: "var(--muted)" }}>Tasdiqlangan</td><td style={{ padding: "5px 0", fontWeight: 700, textAlign: "right", color: "var(--ok)" }}>{analytics.payments.month.approved}</td></tr>
-                  <tr><td style={{ padding: "5px 0", color: "var(--muted)" }}>Rad etilgan</td> <td style={{ padding: "5px 0", fontWeight: 700, textAlign: "right", color: "var(--danger)" }}>{analytics.payments.month.rejected}</td></tr>
-                </tbody>
-              </table>
-            </div>
-
-            {/* Qoniqish */}
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>Qoniqish darajasi</div>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                <tbody>
-                  <tr><td style={{ padding: "5px 0", color: "var(--muted)" }}>Jami baholash</td>    <td style={{ padding: "5px 0", fontWeight: 700, textAlign: "right" }}>{analytics.satisfaction.total}</td></tr>
-                  <tr><td style={{ padding: "5px 0", color: "var(--muted)" }}>Qoniqmaganlar</td>    <td style={{ padding: "5px 0", fontWeight: 700, textAlign: "right", color: "var(--danger)" }}>{analytics.satisfaction.unsatisfied}</td></tr>
-                  <tr><td style={{ padding: "5px 0", color: "var(--muted)" }}>Qoniqmaslik %</td>    <td style={{ padding: "5px 0", fontWeight: 700, textAlign: "right", color: "var(--danger)" }}>{analytics.satisfaction.unsatisfiedRate}%</td></tr>
-                  <tr><td style={{ padding: "5px 0", color: "var(--muted)" }}>Eskalatsiyalar</td>   <td style={{ padding: "5px 0", fontWeight: 700, textAlign: "right" }}>{analytics.escalations.total}</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        {/* ── 4. Top tariflar ── */}
+        {/* ── Top tariflar ── */}
         <div className="surface panel" style={{ marginBottom: 20 }}>
           <SectionTitle>Eng ko'p sotib olingan tariflar (30 kun)</SectionTitle>
           {analytics.topTariffs.length === 0 ? (

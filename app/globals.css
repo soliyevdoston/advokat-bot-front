@@ -509,6 +509,223 @@ button:disabled { opacity: .4; cursor: not-allowed; transform: none !important; 
   .pwa-install-banner { bottom: calc(80px + env(safe-area-inset-bottom)); }
 }
 
+/* ─── Dashboard hero / premium look ─────────────────────── */
+.dash-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  padding: 28px 28px 0;
+  background:
+    radial-gradient(1100px 380px at 92% -120px, rgba(255,255,255,.18), transparent 60%),
+    radial-gradient(700px 320px at -10% 110%, rgba(86,123,255,.45), transparent 65%),
+    linear-gradient(135deg, #0a0a0a 0%, #1a1a25 55%, #0a1530 100%);
+  color: #fff;
+  box-shadow: 0 20px 60px -20px rgba(0,0,0,.45);
+  margin-bottom: 24px;
+}
+
+.dash-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(1px 1px at 12% 30%,  rgba(255,255,255,.6) 50%, transparent 51%),
+    radial-gradient(1px 1px at 78% 18%,  rgba(255,255,255,.4) 50%, transparent 51%),
+    radial-gradient(1px 1px at 32% 80%,  rgba(255,255,255,.5) 50%, transparent 51%),
+    radial-gradient(1px 1px at 94% 60%,  rgba(255,255,255,.3) 50%, transparent 51%),
+    radial-gradient(1px 1px at 56% 12%,  rgba(255,255,255,.4) 50%, transparent 51%);
+  pointer-events: none;
+}
+
+.dash-hero-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 28px;
+  align-items: end;
+}
+
+.dash-hero-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.6);
+  margin: 0 0 8px;
+}
+
+.dash-hero-amount {
+  font-size: clamp(34px, 5vw, 52px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  margin: 0;
+  background: linear-gradient(135deg, #ffffff 0%, #c8c8d6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.dash-hero-sub {
+  margin: 8px 0 0;
+  color: rgba(255,255,255,.7);
+  font-size: 13px;
+}
+
+.dash-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.dash-hero-stat {
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  padding: 12px 14px;
+  backdrop-filter: blur(4px);
+}
+
+.dash-hero-stat-value {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.dash-hero-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.55);
+  margin-top: 6px;
+}
+
+.dash-hero-wave {
+  margin-top: 22px;
+  margin-left: -28px;
+  margin-right: -28px;
+  height: 110px;
+  position: relative;
+}
+
+@media (max-width: 760px) {
+  .dash-hero { padding: 22px 18px 0; border-radius: 16px; }
+  .dash-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .dash-hero-stats { gap: 8px; }
+  .dash-hero-stat { padding: 10px 12px; }
+  .dash-hero-stat-value { font-size: 18px; }
+  .dash-hero-wave { margin-left: -18px; margin-right: -18px; height: 90px; }
+}
+
+/* Metric cards with inline mini-wave ─────────────────────── */
+.metric-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 18px 0;
+  box-shadow: var(--shadow);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.metric-card-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.metric-card-value {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  margin-top: 6px;
+  color: var(--ink);
+}
+
+.metric-card-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.metric-card-delta.up   { color: var(--ok); }
+.metric-card-delta.down { color: var(--danger); }
+.metric-card-delta.flat { color: var(--muted); }
+
+.metric-card-spark {
+  margin-left: -18px;
+  margin-right: -18px;
+  margin-top: 14px;
+  height: 56px;
+}
+
+/* Section card with chart ───────────────────────────────── */
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px 14px;
+  box-shadow: var(--shadow);
+}
+
+.chart-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.chart-card-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.chart-card-amount {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.wave-chart svg path { transition: opacity 200ms; }
+
+@keyframes wave-draw {
+  from { stroke-dashoffset: 800; opacity: 0; }
+  to   { stroke-dashoffset: 0;   opacity: 1; }
+}
+
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.count-up-anim {
+  animation: count-up 500ms ease-out;
+}
+
 /* ─── Animations ────────────────────────────────────────── */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(6px); }
