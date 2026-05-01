@@ -9,6 +9,7 @@ import type {
   AdminDashboard,
   AdminRevenue,
   AIConversationListItem,
+  Booking,
   EscalationItem,
   KnowledgeEntry,
   Paginated,
@@ -52,6 +53,71 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ fontWeight: 700, fontSize: 12, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 14 }}>
       {children}
+    </div>
+  );
+}
+
+function UpcomingBookingsWidget({ items }: { items: Booking[] }) {
+  const now = Date.now();
+  const horizon = now + 24 * 60 * 60 * 1000;
+  const sorted = items
+    .filter((b) => b.slot && new Date(b.slot.startsAt).getTime() >= now)
+    .filter((b) => b.slot && new Date(b.slot.startsAt).getTime() <= horizon)
+    .sort((a, b) => new Date(a.slot!.startsAt).getTime() - new Date(b.slot!.startsAt).getTime())
+    .slice(0, 6);
+
+  return (
+    <div className="surface panel" style={{ marginBottom: 20 }}>
+      <SectionTitle>Yaqin uchrashuvlar (24 soat)</SectionTitle>
+      {sorted.length === 0 ? (
+        <p style={{ color: "var(--muted)", fontSize: 13 }}>Yaqin 24 soat ichida uchrashuvlar yo'q.</p>
+      ) : (
+        <div style={{ display: "grid", gap: 8 }}>
+          {sorted.map((b) => {
+            const start = new Date(b.slot!.startsAt);
+            const minutesUntil = Math.round((start.getTime() - now) / 60000);
+            const soon = minutesUntil <= 15;
+            const name = b.user?.fullName || b.user?.username || b.user?.phone || "Mijoz";
+            return (
+              <div
+                key={b.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  background: soon ? "rgba(255, 165, 0, 0.08)" : "var(--surface)",
+                  border: `1px solid ${soon ? "var(--warn)" : "var(--border)"}`,
+                  fontSize: 14
+                }}
+              >
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <span style={{ fontWeight: 600 }}>{name}</span>
+                  <span style={{ fontSize: 12, color: "var(--muted)" }}>
+                    {formatDateTime(b.slot!.startsAt)}
+                    {b.payment?.tariff?.code === "premium_booking" ? " · ⭐ Premium" : ""}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: soon ? "var(--warn)" : "var(--muted)",
+                    textAlign: "right"
+                  }}
+                >
+                  {minutesUntil <= 0
+                    ? "Hozir"
+                    : minutesUntil < 60
+                      ? `${minutesUntil} daq`
+                      : `${Math.round(minutesUntil / 60)} soat`}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -373,14 +439,16 @@ export default function DashboardPage() {
   const [stats, setStats]     = useState<AdminDashboard>(emptyStats);
   const [analytics, setAnalytics] = useState<AdminAnalytics>(emptyAnalytics);
   const [revenue, setRevenue] = useState<AdminRevenue | null>(null);
+  const [upcoming, setUpcoming] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
-    const [dashboardResult, analyticsResult, revenueResult] = await Promise.allSettled([
+    const [dashboardResult, analyticsResult, revenueResult, upcomingResult] = await Promise.allSettled([
       api.get<AdminDashboard>("/admin/dashboard"),
       api.get<AdminAnalytics>("/admin/analytics?rangeDays=30"),
-      api.get<AdminRevenue>("/admin/revenue")
+      api.get<AdminRevenue>("/admin/revenue"),
+      api.get<Booking[]>("/bookings?upcoming=true")
     ]);
 
     let nextStats = dashboardResult.status === "fulfilled" ? dashboardResult.value : null;
@@ -397,6 +465,7 @@ export default function DashboardPage() {
     setStats(nextStats ?? emptyStats);
     setAnalytics(nextAnalytics ?? emptyAnalytics);
     setRevenue(nextRevenue);
+    setUpcoming(upcomingResult.status === "fulfilled" ? upcomingResult.value : []);
     setLoading(false);
   };
 
@@ -420,6 +489,9 @@ export default function DashboardPage() {
           <h1 className="page-title">Dashboard</h1>
           <button className="btn-secondary" onClick={load}>Yangilash</button>
         </div>
+
+        {/* ── 0. Yaqin uchrashuvlar ── */}
+        <UpcomingBookingsWidget items={upcoming} />
 
         {/* ── 1. Daromad ── */}
         <div className="surface panel" style={{ marginBottom: 20 }}>
