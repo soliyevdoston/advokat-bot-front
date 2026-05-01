@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
+import { useToast } from "../../components/Toast";
 import { api } from "../../lib/api";
 import { formatDateTime } from "../../lib/format";
 
@@ -63,6 +64,7 @@ type MeetingLinkModal = {
 };
 
 export default function BookingsPage() {
+  const toast = useToast();
   const [items, setItems] = useState<BookingScheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,9 +110,9 @@ export default function BookingsPage() {
         lang: modal.lang.toUpperCase() === "RU" ? "RU" : modal.lang.toUpperCase() === "EN" ? "EN" : "UZ"
       });
       setModal(null);
-      alert("Link muvaffaqiyatli yuborildi!");
+      toast.success("Link muvaffaqiyatli yuborildi!");
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     } finally {
       setSending(false);
     }

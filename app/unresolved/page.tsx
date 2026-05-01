@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
+import { useToast } from "../../components/Toast";
 import { api } from "../../lib/api";
 import { formatDateTime } from "../../lib/format";
 import type { EscalationItem, Paginated } from "../../types";
@@ -33,6 +34,7 @@ type MeetingLinkModal = {
 };
 
 export default function UnresolvedPage() {
+  const toast = useToast();
   const [items, setItems] = useState<EscalationItem[]>([]);
   const [status, setStatus] = useState<(typeof STATUS_OPTIONS)[number] | "ALL">("ALL");
   const [loading, setLoading] = useState(true);
@@ -50,7 +52,7 @@ export default function UnresolvedPage() {
       const data = await api.get<Paginated<EscalationItem>>(`/ai/escalations?${params.toString()}`);
       setItems(data.items);
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -65,8 +67,9 @@ export default function UnresolvedPage() {
     try {
       await api.post(`/ai/escalations/${item.id}/resolve`, { note });
       await load();
+      toast.success("Hal qilindi.");
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     }
   };
 
@@ -92,9 +95,9 @@ export default function UnresolvedPage() {
         lang: modal.lang.toUpperCase() === "RU" ? "RU" : modal.lang.toUpperCase() === "EN" ? "EN" : "UZ"
       });
       setModal(null);
-      alert("Link muvaffaqiyatli yuborildi!");
+      toast.success("Link muvaffaqiyatli yuborildi!");
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     } finally {
       setSending(false);
     }

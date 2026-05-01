@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
+import { useToast } from "../../components/Toast";
 import { api } from "../../lib/api";
 import { formatMoney } from "../../lib/format";
 import type { Tariff } from "../../types";
@@ -79,6 +80,7 @@ const toPayload = (form: TariffForm) => {
 };
 
 export default function TariffsPage() {
+  const toast = useToast();
   const [items, setItems] = useState<Tariff[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -130,7 +132,7 @@ export default function TariffsPage() {
       await load();
       clearForm();
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     } finally {
       setSaving(false);
     }
@@ -151,7 +153,7 @@ export default function TariffsPage() {
         clearForm();
       }
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     }
   };
 

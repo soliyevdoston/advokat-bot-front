@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
+import { useToast } from "../../components/Toast";
 import { api } from "../../lib/api";
 import type { SettingItem } from "../../types";
 
@@ -30,6 +31,7 @@ const keyLabel: Record<string, string> = {
 };
 
 export default function SettingsPage() {
+  const toast = useToast();
   const [items, setItems] = useState<SettingItem[]>([]);
   const [selectedKey, setSelectedKey] = useState<string>("");
   const [description, setDescription] = useState("");
@@ -48,7 +50,7 @@ export default function SettingsPage() {
         setSelectedKey(rows[0].key);
       }
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     }
   };
 
@@ -65,7 +67,7 @@ export default function SettingsPage() {
 
   const save = async () => {
     if (!selectedKey.trim()) {
-      alert("Kalit talab qilinadi.");
+      toast.error("Kalit talab qilinadi.");
       return;
     }
 
@@ -73,7 +75,7 @@ export default function SettingsPage() {
     try {
       parsed = JSON.parse(valueText);
     } catch (err) {
-      alert(`Noto'g'ri JSON: ${(err as Error).message}`);
+      toast.error(`Noto'g'ri JSON: ${(err as Error).message}`);
       return;
     }
 
@@ -83,9 +85,9 @@ export default function SettingsPage() {
         description: description.trim() || undefined
       });
       await load();
-      alert("Sozlamalar saqlandi.");
+      toast.success("Sozlamalar saqlandi.");
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     }
   };
 

@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
+import { useToast } from "../../components/Toast";
 import { api } from "../../lib/api";
 import { formatDateTime } from "../../lib/format";
 import type {
@@ -64,6 +65,7 @@ const toList = (value: string) =>
     .filter(Boolean);
 
 export default function KnowledgePage() {
+  const toast = useToast();
   const [categories, setCategories] = useState<KnowledgeCategory[]>([]);
   const [entries, setEntries] = useState<KnowledgeEntry[]>([]);
   const [categoryForm, setCategoryForm] = useState<CategoryForm>(defaultCategoryForm);
@@ -88,7 +90,7 @@ export default function KnowledgePage() {
       setEntries(entriesRes.items);
       setUnanswered(unansweredRes.items);
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     }
   };
 
@@ -116,7 +118,7 @@ export default function KnowledgePage() {
       setEditingCategoryId(null);
       await load();
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     }
   };
 
@@ -147,7 +149,7 @@ export default function KnowledgePage() {
       setEditingEntryId(null);
       await load();
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     }
   };
 

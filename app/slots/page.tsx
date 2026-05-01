@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
+import { useToast } from "../../components/Toast";
 import { api } from "../../lib/api";
 import type { Slot } from "../../types";
 
@@ -61,6 +62,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function SlotsPage() {
+  const toast = useToast();
   const [slots, setSlots] = useState<Slot[]>([]);
   const [weekBase, setWeekBase] = useState(() => {
     const d = new Date();
@@ -83,7 +85,7 @@ export default function SlotsPage() {
       const data = await api.get<Slot[]>("/slots");
       setSlots(data);
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     }
   };
 
@@ -134,7 +136,7 @@ export default function SlotsPage() {
       setAdding(null);
       await load();
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     } finally {
       setSaving(false);
     }
@@ -146,7 +148,7 @@ export default function SlotsPage() {
       await api.delete(`/slots/${slotId}`);
       await load();
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     }
   };
 
@@ -187,9 +189,9 @@ export default function SlotsPage() {
       }
       setBulkMode(false);
       await load();
-      alert(`${toCreate.length} ta vaqt qo'shildi ✅`);
+      toast.success(`${toCreate.length} ta vaqt qo'shildi`);
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     } finally {
       setSaving(false);
     }

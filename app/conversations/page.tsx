@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
+import { useToast } from "../../components/Toast";
 import { api } from "../../lib/api";
 import { formatDateTime } from "../../lib/format";
 import type { AIConversationListItem, AIConversationMessage, Paginated } from "../../types";
@@ -30,6 +31,7 @@ const categoryLabel: Record<string, string> = {
 };
 
 export default function ConversationsPage() {
+  const toast = useToast();
   const [items, setItems] = useState<AIConversationListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<{ id: string; messages: AIConversationMessage[] } | null>(null);
@@ -40,7 +42,7 @@ export default function ConversationsPage() {
       const data = await api.get<Paginated<AIConversationListItem>>("/ai/conversations?page=1&limit=100");
       setItems(data.items);
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -55,7 +57,7 @@ export default function ConversationsPage() {
       const messages = await api.get<AIConversationMessage[]>(`/ai/conversations/${conversationId}/messages`);
       setSelected({ id: conversationId, messages });
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     }
   };
 

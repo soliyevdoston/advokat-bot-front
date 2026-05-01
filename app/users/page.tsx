@@ -2,11 +2,13 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
+import { useToast } from "../../components/Toast";
 import { api } from "../../lib/api";
 import { formatDateTime } from "../../lib/format";
 import type { Paginated, User } from "../../types";
 
 export default function UsersPage() {
+  const toast = useToast();
   const [items, setItems] = useState<User[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,7 @@ export default function UsersPage() {
       });
       await load();
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     }
   };
 

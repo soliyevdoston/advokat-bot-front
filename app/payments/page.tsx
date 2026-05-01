@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
+import { useToast } from "../../components/Toast";
 import { api } from "../../lib/api";
 import { formatDateTime, formatMoney } from "../../lib/format";
 import type { Payment } from "../../types";
@@ -11,6 +12,7 @@ const revokeObjectUrls = (items: Record<string, string>) => {
 };
 
 export default function PaymentsPage() {
+  const toast = useToast();
   const [items, setItems] = useState<Payment[]>([]);
   const [receiptPreviewMap, setReceiptPreviewMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -71,7 +73,7 @@ export default function PaymentsPage() {
       await api.post(`/payments/${paymentId}/${action}`, { note: note || undefined });
       await load();
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     }
   };
 
@@ -84,7 +86,7 @@ export default function PaymentsPage() {
       }
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     }
   };
 

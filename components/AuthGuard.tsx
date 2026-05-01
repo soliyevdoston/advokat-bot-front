@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { getAccessToken } from "../lib/auth";
+import { BottomNav } from "./BottomNav";
 import { Sidebar } from "./Sidebar";
+import { ToastProvider } from "./Toast";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
@@ -27,19 +29,27 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="page-shell">
-        <Sidebar />
-        <main>
-          <div className="surface panel" style={{ color: "var(--muted)" }}>Yuklanmoqda...</div>
-        </main>
-      </div>
+      <ToastProvider>
+        <div className="page-shell">
+          <Sidebar />
+          <main>
+            <div className="surface panel" style={{ color: "var(--muted)" }}>
+              Yuklanmoqda...
+            </div>
+          </main>
+          <BottomNav />
+        </div>
+      </ToastProvider>
     );
   }
 
   return (
-    <div className="page-shell">
-      <Sidebar />
-      {children}
-    </div>
+    <ToastProvider>
+      <div className="page-shell">
+        <Sidebar />
+        {children}
+        <BottomNav />
+      </div>
+    </ToastProvider>
   );
 }
