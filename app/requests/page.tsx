@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
 import { api } from "../../lib/api";
 import { formatDateTime } from "../../lib/format";
-import type { EscalationItem, Payment } from "../../types";
+import type { Payment } from "../../types";
 
 type BookingQueueItem = {
   id: string;
@@ -50,7 +50,6 @@ export default function RequestsPage() {
   const [pendingPayments, setPendingPayments] = useState<Payment[]>([]);
   const [approvedPayments, setApprovedPayments] = useState<Payment[]>([]);
   const [upcomingBookings, setUpcomingBookings] = useState<BookingQueueItem[]>([]);
-  const [premiumEscalations, setPremiumEscalations] = useState<EscalationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,16 +57,14 @@ export default function RequestsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [pending, approved, bookings, escalations] = await Promise.all([
+      const [pending, approved, bookings] = await Promise.all([
         api.get<Payment[]>("/payments?status=PENDING"),
         api.get<Payment[]>("/payments?status=APPROVED"),
         api.get<BookingQueueItem[]>("/bookings?upcoming=true"),
-        api.get<EscalationItem[]>("/admin/escalations?status=OPEN&limit=50").catch(() => [] as EscalationItem[]),
       ]);
       setPendingPayments(pending);
       setApprovedPayments(approved);
       setUpcomingBookings(bookings);
-      setPremiumEscalations(escalations.filter(e => e.reason?.includes("PREMIUM")));
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -132,37 +129,19 @@ export default function RequestsPage() {
       });
     });
 
-    premiumEscalations.forEach((item) => {
-      const contact = item.reason?.match(/contact:(.+)$/)?.[1] ?? "–";
-      rows.push({
-        id: `premium-${item.id}`,
-        priority: 1,
-        stage: "⭐ PREMIUM — aloqa kutilmoqda",
-        client: clientName(item.user),
-        contact: contact !== "–" ? contact : (item.user.telegramId ? `tg:${item.user.telegramId}` : "–"),
-        tariffCode: "premium_booking",
-        timeText: formatDateTime(item.createdAt),
-        createdAt: new Date(item.createdAt).getTime(),
-        actionHref: "/payments",
-        actionText: "To'lovlarga o'tish",
-        statusTag: "tag-danger"
-      });
-    });
-
     return rows.sort((a, b) => {
       if (a.priority !== b.priority) return a.priority - b.priority;
       return a.createdAt - b.createdAt;
     });
-  }, [approvedPayments, pendingPayments, upcomingBookings, premiumEscalations]);
+  }, [approvedPayments, pendingPayments, upcomingBookings]);
 
   const stats = useMemo(
     () => ({
       pendingCount: pendingPayments.length,
       waitingSlotCount: approvedPayments.filter((item) => !item.booking).length,
       upcomingCount: upcomingBookings.length,
-      premiumCount: premiumEscalations.length,
     }),
-    [approvedPayments, pendingPayments, upcomingBookings, premiumEscalations]
+    [approvedPayments, pendingPayments, upcomingBookings]
   );
 
   return (
@@ -185,10 +164,6 @@ export default function RequestsPage() {
           <div className="surface panel stat-card">
             <div className="stat-number" style={{ color: "var(--ok)" }}>{stats.upcomingCount}</div>
             <div className="stat-label">Yaqin konsultatsiyalar</div>
-          </div>
-          <div className="surface panel stat-card">
-            <div className="stat-number" style={{ color: "#f59e0b" }}>{stats.premiumCount}</div>
-            <div className="stat-label">⭐ Premium kutayotganlar</div>
           </div>
         </div>
 
@@ -222,9 +197,7 @@ export default function RequestsPage() {
                       <td>{item.client}</td>
                       <td style={{ fontSize: 13 }}>{item.contact}</td>
                       <td>
-                        {item.tariffCode === "premium_booking" ? (
-                          <span style={{ background: "#f59e0b", color: "#fff", borderRadius: 4, padding: "2px 7px", fontSize: 12, fontWeight: 700 }}>⭐ PREMIUM</span>
-                        ) : item.tariffCode === "qabul_booking" ? (
+                        {item.tariffCode === "qabul_booking" ? (
                           <span style={{ background: "#0d5e93", color: "#fff", borderRadius: 4, padding: "2px 7px", fontSize: 12 }}>Qabul</span>
                         ) : (
                           <span style={{ background: "#6b7280", color: "#fff", borderRadius: 4, padding: "2px 7px", fontSize: 12 }}>AI</span>
