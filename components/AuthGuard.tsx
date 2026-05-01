@@ -30,7 +30,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       <div className="page-shell">
         <Sidebar />
         <main>
-          <div className="surface panel" style={{ color: "#546573" }}>Yuklanmoqda...</div>
+          <div className="surface panel" style={{ color: "var(--muted)" }}>Yuklanmoqda...</div>
         </main>
       </div>
     );

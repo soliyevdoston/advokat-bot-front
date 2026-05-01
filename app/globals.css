@@ -122,7 +122,11 @@ input, select, textarea, button { font: inherit; }
 .input::placeholder { color: var(--muted); }
 
 /* ─── Buttons ───────────────────────────────────────────── */
-button {
+button,
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.btn-ghost {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -136,9 +140,14 @@ button {
   line-height: 1;
   transition: opacity 120ms, transform 100ms, box-shadow 120ms;
   white-space: nowrap;
+  text-decoration: none;
 }
 
-button:hover:not(:disabled) { opacity: .88; transform: translateY(-1px); }
+button:hover:not(:disabled),
+.btn-primary:hover,
+.btn-secondary:hover,
+.btn-danger:hover,
+.btn-ghost:hover { opacity: .88; transform: translateY(-1px); }
 button:active:not(:disabled) { transform: translateY(0); }
 button:disabled { opacity: .4; cursor: not-allowed; transform: none !important; }
 

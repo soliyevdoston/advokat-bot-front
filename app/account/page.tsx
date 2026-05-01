@@ -51,83 +51,103 @@ export default function AccountPage() {
 
   return (
     <AuthGuard>
-      <div style={{ maxWidth: 480 }}>
-        <h1 style={{ marginBottom: 8 }}>Hisob</h1>
-        <p style={{ color: "var(--muted)", marginBottom: 24 }}>
-          Parolni o'zgartirganingizda barcha qurilmalardan chiqib ketasiz.
-        </p>
+      <main>
+        <div className="page-header">
+          <h1 className="page-title">Hisob</h1>
+        </div>
 
-        <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span>Joriy parol</span>
-            <input
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-              style={inputStyle}
-            />
-          </label>
+        <div className="surface panel" style={{ maxWidth: 480 }}>
+          <p style={{ color: "var(--muted)", margin: "0 0 20px", fontSize: 13 }}>
+            Parolni o'zgartirganingizda barcha boshqa qurilmalardan chiqib ketasiz —
+            hozirgi qurilma faol qoladi.
+          </p>
 
-          <label style={{ display: "grid", gap: 6 }}>
-            <span>Yangi parol (kamida 10 belgi)</span>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              autoComplete="new-password"
-              minLength={10}
-              required
-              style={inputStyle}
-            />
-          </label>
+          <form onSubmit={submit} className="grid" style={{ gap: 14 }}>
+            <label className="grid" style={{ gap: 5 }}>
+              <span style={{ fontSize: 12, color: "var(--ink-2)", fontWeight: 600 }}>
+                Joriy parol
+              </span>
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+                className="input"
+              />
+            </label>
 
-          <label style={{ display: "grid", gap: 6 }}>
-            <span>Yangi parolni takrorlang</span>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              autoComplete="new-password"
-              minLength={10}
-              required
-              style={inputStyle}
-            />
-          </label>
+            <label className="grid" style={{ gap: 5 }}>
+              <span style={{ fontSize: 12, color: "var(--ink-2)", fontWeight: 600 }}>
+                Yangi parol{" "}
+                <span style={{ color: "var(--muted)", fontWeight: 400 }}>(kamida 10 belgi)</span>
+              </span>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                autoComplete="new-password"
+                minLength={10}
+                required
+                className="input"
+              />
+            </label>
 
-          {error && (
-            <div style={{ color: "#c0392b", fontSize: 14 }}>{error}</div>
-          )}
-          {message && (
-            <div style={{ color: "#27ae60", fontSize: 14 }}>{message}</div>
-          )}
+            <label className="grid" style={{ gap: 5 }}>
+              <span style={{ fontSize: 12, color: "var(--ink-2)", fontWeight: 600 }}>
+                Yangi parolni takrorlang
+              </span>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
+                minLength={10}
+                required
+                className="input"
+              />
+            </label>
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              padding: "10px 16px",
-              borderRadius: 8,
-              border: "none",
-              background: "var(--ink, #111)",
-              color: "#fff",
-              cursor: loading ? "not-allowed" : "pointer",
-              opacity: loading ? 0.6 : 1
-            }}
-          >
-            {loading ? "Saqlanmoqda…" : "Parolni o'zgartirish"}
-          </button>
-        </form>
-      </div>
+            {error && (
+              <div
+                style={{
+                  background: "var(--danger-bg)",
+                  color: "var(--danger)",
+                  border: "1px solid #fecaca",
+                  borderRadius: "var(--radius)",
+                  padding: "9px 12px",
+                  fontSize: 13
+                }}
+              >
+                {error}
+              </div>
+            )}
+            {message && (
+              <div
+                style={{
+                  background: "var(--ok-bg)",
+                  color: "var(--ok)",
+                  border: "1px solid #bbf7d0",
+                  borderRadius: "var(--radius)",
+                  padding: "9px 12px",
+                  fontSize: 13
+                }}
+              >
+                {message}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary"
+              style={{ marginTop: 4 }}
+            >
+              {loading ? "Saqlanmoqda…" : "Parolni o'zgartirish"}
+            </button>
+          </form>
+        </div>
+      </main>
     </AuthGuard>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  padding: "8px 12px",
-  borderRadius: 6,
-  border: "1px solid var(--border, #d6d6d6)",
-  background: "var(--surface, #fff)",
-  fontSize: 14
-};
