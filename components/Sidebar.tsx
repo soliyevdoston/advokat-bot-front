@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { api } from "../lib/api";
 import { clearTokens } from "../lib/auth";
 
 const nav = [
@@ -125,6 +126,16 @@ const nav = [
       </svg>
     ),
   },
+  {
+    href: "/account",
+    label: "Hisob (parol)",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+    ),
+  },
 ];
 
 export function Sidebar() {
@@ -140,7 +151,15 @@ export function Sidebar() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const logout = () => { clearTokens(); router.replace("/login"); };
+  const logout = async () => {
+    try {
+      await api.post("/auth/logout", {});
+    } catch {
+      // best-effort: even if the call fails (e.g. token expired) we still clear local state
+    }
+    clearTokens();
+    router.replace("/login");
+  };
 
   return (
     <>
