@@ -460,6 +460,55 @@ button:disabled { opacity: .4; cursor: not-allowed; transform: none !important; 
   .sidebar { transform: translateX(0) !important; }
 }
 
+/* ─── PWA install banner ────────────────────────────────── */
+.pwa-install-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  max-width: calc(100vw - 24px);
+  width: min(440px, calc(100vw - 24px));
+  animation: fade-in 200ms ease-out;
+}
+
+.pwa-install-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.pwa-install-text strong { font-size: 14px; }
+.pwa-install-text span   { color: var(--muted); }
+
+.pwa-install-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pwa-install-actions button {
+  font-size: 13px;
+  padding: 8px 14px;
+}
+
+@media (max-width: 900px) {
+  /* Lift the install banner above the bottom nav so it's not covered. */
+  .pwa-install-banner { bottom: calc(80px + env(safe-area-inset-bottom)); }
+}
+
 /* ─── Animations ────────────────────────────────────────── */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(6px); }
