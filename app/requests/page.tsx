@@ -44,20 +44,16 @@ type QueueItem = {
   actionHref: "/payments" | "/bookings";
   actionText: string;
   statusTag: "tag-danger" | "tag-pending" | "tag-ok";
-  telegramId?: string;
-  lang?: string;
   meetLink?: string | null;
-};
-
-type LinkModal = {
-  telegramId: string;
-  lang: string;
-  label: string;
-  link: string;
 };
 
 const clientName = (params: { fullName: string | null; username: string | null; id: string }) =>
   params.fullName || params.username || params.id.slice(0, 8);
+
+function genJitsiLink() {
+  const id = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
+  return `https://meet.jit.si/advokat-${id}`;
+}
 
 export default function RequestsPage() {
   const toast = useToast();
@@ -67,8 +63,7 @@ export default function RequestsPage() {
   const [premiumEscalations, setPremiumEscalations] = useState<EscalationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [linkModal, setLinkModal] = useState<LinkModal | null>(null);
-  const [sending, setSending] = useState(false);
+  const [sendingId, setSendingId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -91,9 +86,28 @@ export default function RequestsPage() {
     }
   };
 
-  useEffect(() => {
-    void load();
-  }, []);
+  useEffect(() => { void load(); }, []);
+
+  const sendPremiumLink = async (esc: EscalationItem) => {
+    const tgId = esc.user?.telegramId;
+    if (!tgId) { toast.error("Telegram ID yo'q"); return; }
+    setSendingId(esc.id);
+    const link = genJitsiLink();
+    const lang = (esc.user?.language ?? "UZ") as "UZ" | "RU" | "EN";
+    try {
+      await api.post("/admin/send-meeting-link", {
+        telegramId: tgId,
+        link,
+        slotTime: "Premium qabul",
+        lang,
+      });
+      toast.success(`Link yuborildi: ${link}`);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSendingId(null);
+    }
+  };
 
   const queue = useMemo(() => {
     const rows: QueueItem[] = [];
@@ -145,8 +159,6 @@ export default function RequestsPage() {
         actionHref: "/bookings",
         actionText: "Bronlarga o'tish",
         statusTag: "tag-ok",
-        telegramId: item.user.telegramId ?? undefined,
-        lang: item.user.language ?? "UZ",
         meetLink: item.meetLink,
       });
     });
@@ -166,29 +178,6 @@ export default function RequestsPage() {
     }),
     [approvedPayments, pendingPayments, upcomingBookings, premiumEscalations]
   );
-
-  const openLinkModal = (telegramId: string, lang: string, label: string, existingLink?: string | null) => {
-    setLinkModal({ telegramId, lang, label, link: existingLink ?? "" });
-  };
-
-  const sendLink = async () => {
-    if (!linkModal || !linkModal.link.trim()) return;
-    setSending(true);
-    try {
-      await api.post("/admin/send-meeting-link", {
-        telegramId: linkModal.telegramId,
-        link: linkModal.link.trim(),
-        slotTime: linkModal.label,
-        lang: (linkModal.lang.toUpperCase() === "RU" ? "RU" : linkModal.lang.toUpperCase() === "EN" ? "EN" : "UZ") as "UZ" | "RU" | "EN",
-      });
-      toast.success("Link muvaffaqiyatli yuborildi!");
-      setLinkModal(null);
-    } catch (err) {
-      toast.error((err as Error).message);
-    } finally {
-      setSending(false);
-    }
-  };
 
   return (
     <AuthGuard>
@@ -230,6 +219,7 @@ export default function RequestsPage() {
               {premiumEscalations.map((esc) => {
                 const contact = esc.reason?.match(/contact:(.+)$/)?.[1] ?? "–";
                 const tgId = esc.user?.telegramId ?? "";
+                const isSending = sendingId === esc.id;
                 return (
                   <div
                     key={esc.id}
@@ -245,15 +235,11 @@ export default function RequestsPage() {
                     }}
                   >
                     <div style={{ flex: 1, minWidth: 160 }}>
-                      <div style={{ fontWeight: 700, fontSize: 14 }}>
-                        {clientName(esc.user)}
-                      </div>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>{clientName(esc.user)}</div>
                       <div style={{ fontSize: 12, color: "var(--muted)" }}>
                         {tgId ? `tg: ${tgId}` : "–"}
                       </div>
-                      <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                        Aloqa: {contact}
-                      </div>
+                      <div style={{ fontSize: 12, color: "var(--muted)" }}>Aloqa: {contact}</div>
                       <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
                         {formatDateTime(esc.createdAt)}
                       </div>
@@ -261,12 +247,11 @@ export default function RequestsPage() {
                     {tgId ? (
                       <button
                         className="btn-primary"
+                        disabled={isSending}
                         style={{ fontSize: 13, padding: "7px 14px", background: "#f59e0b", borderColor: "#f59e0b" }}
-                        onClick={() =>
-                          openLinkModal(tgId, esc.user?.language ?? "UZ", `Premium qabul — ${clientName(esc.user)}`)
-                        }
+                        onClick={() => sendPremiumLink(esc)}
                       >
-                        Link yuborish
+                        {isSending ? "Yuborilmoqda..." : "Link yuborish"}
                       </button>
                     ) : (
                       <span style={{ fontSize: 12, color: "var(--muted)" }}>tg yo'q</span>
@@ -292,8 +277,8 @@ export default function RequestsPage() {
                     <th>Aloqa</th>
                     <th>Tarif</th>
                     <th>Vaqt</th>
+                    <th>Meet link</th>
                     <th>Bo'lim</th>
-                    <th>Link</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -314,88 +299,29 @@ export default function RequestsPage() {
                       </td>
                       <td style={{ whiteSpace: "nowrap", fontSize: 13 }}>{item.timeText}</td>
                       <td>
-                        <Link href={item.actionHref} style={{ color: "#0d5e93", fontWeight: 700, fontSize: 13 }}>
-                          {item.actionText}
-                        </Link>
-                      </td>
-                      <td>
-                        {item.telegramId ? (
-                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                            {item.meetLink && (
-                              <a
-                                href={item.meetLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ fontSize: 11, color: "var(--ok)", wordBreak: "break-all" }}
-                              >
-                                Link bor
-                              </a>
-                            )}
-                            <button
-                              className="btn-secondary"
-                              style={{ fontSize: 12, padding: "4px 8px" }}
-                              onClick={() =>
-                                openLinkModal(
-                                  item.telegramId!,
-                                  item.lang ?? "UZ",
-                                  item.timeText,
-                                  item.meetLink
-                                )
-                              }
-                            >
-                              {item.meetLink ? "Qayta yuborish" : "Link yuborish"}
-                            </button>
-                          </div>
+                        {item.meetLink ? (
+                          <a
+                            href={item.meetLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ fontSize: 12, color: "var(--ok)", wordBreak: "break-all", maxWidth: 160, display: "block" }}
+                          >
+                            {item.meetLink.replace("https://", "")}
+                          </a>
                         ) : (
                           <span style={{ color: "var(--muted)", fontSize: 12 }}>–</span>
                         )}
+                      </td>
+                      <td>
+                        <Link href={item.actionHref} style={{ color: "#0d5e93", fontWeight: 700, fontSize: 13 }}>
+                          {item.actionText}
+                        </Link>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             )}
-          </div>
-        ) : null}
-
-        {/* Link send modal */}
-        {linkModal ? (
-          <div
-            style={{
-              position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)",
-              display: "grid", placeItems: "center", zIndex: 100,
-            }}
-            onClick={(e) => { if (e.target === e.currentTarget && !sending) setLinkModal(null); }}
-          >
-            <div className="surface panel" style={{ width: "100%", maxWidth: 460 }}>
-              <h2 style={{ marginBottom: 6 }}>Meeting link yuborish</h2>
-              <p style={{ color: "var(--muted)", marginTop: 0, marginBottom: 16, fontSize: 14 }}>
-                Mijoz: <strong>{linkModal.telegramId}</strong><br />
-                {linkModal.label}
-              </p>
-              <div className="grid" style={{ gap: 12 }}>
-                <input
-                  className="input"
-                  value={linkModal.link}
-                  onChange={(e) => setLinkModal({ ...linkModal, link: e.target.value })}
-                  placeholder="https://meet.google.com/... yoki zoom link"
-                  type="url"
-                  autoFocus
-                />
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    className="btn-primary"
-                    disabled={sending || !linkModal.link.trim()}
-                    onClick={sendLink}
-                  >
-                    {sending ? "Yuborilmoqda..." : "Yuborish"}
-                  </button>
-                  <button className="btn-danger" disabled={sending} onClick={() => setLinkModal(null)}>
-                    Bekor
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
         ) : null}
       </main>
