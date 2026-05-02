@@ -917,9 +917,10 @@ button:disabled { opacity: .4; cursor: not-allowed; transform: none !important; 
     left: 0;
     right: 0;
     z-index: calc(var(--sidebar-z) + 4);
-    background: #0a0a0a;
-    border-top: 1px solid #1a1a1a;
-    padding: 6px 4px max(6px, env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 16px rgba(0,0,0,.07);
+    padding: 4px 4px max(6px, env(safe-area-inset-bottom));
     gap: 0;
   }
 
@@ -932,7 +933,7 @@ button:disabled { opacity: .4; cursor: not-allowed; transform: none !important; 
     padding: 7px 4px;
     border: none;
     background: transparent;
-    color: #71717a;
+    color: var(--muted);
     font-size: 10.5px;
     font-weight: 500;
     border-radius: 10px;
@@ -942,8 +943,8 @@ button:disabled { opacity: .4; cursor: not-allowed; transform: none !important; 
   }
 
   .bottom-nav-item.active {
-    color: #fafafa;
-    background: #1a1a1a;
+    color: var(--ink);
+    background: var(--hover);
   }
 
   .bottom-nav-item:active:not(:disabled) { transform: scale(.95); }

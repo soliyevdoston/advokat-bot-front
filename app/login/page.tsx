@@ -74,16 +74,19 @@ export default function LoginPage() {
         .pin-dot.error  { background: #dc2626; border-color: #dc2626; }
         .pad-btn {
           width: 76px; height: 76px; border-radius: 50%;
-          border: none; background: #f4f4f5;
+          border: none; background: #f0f0f1;
           font-size: 24px; font-weight: 600; color: #0a0a0a;
-          cursor: pointer; transition: background 0.1s, transform 0.08s;
+          cursor: pointer; transition: background 0.12s, transform 0.08s;
           display: flex; align-items: center; justify-content: center;
+          outline: none; -webkit-tap-highlight-color: transparent;
         }
-        .pad-btn:hover:not(:disabled) { background: #e4e4e7; }
+        .pad-btn:hover:not(:disabled) { background: #e2e2e4; }
         .pad-btn:active:not(:disabled) { transform: scale(0.91); background: #d4d4d8; }
+        .pad-btn:focus { outline: none; }
         .pad-btn:disabled { opacity: 0.35; cursor: default; }
         .pad-btn.ghost { background: transparent; font-size: 22px; }
-        .pad-btn.ghost:hover:not(:disabled) { background: #f4f4f5; }
+        .pad-btn.ghost:hover:not(:disabled) { background: #f0f0f1; }
+        .pad-btn.ghost:focus { outline: none; }
       `}</style>
       <main style={{
         minHeight: "100vh", display: "grid", placeItems: "center",
@@ -109,7 +112,7 @@ export default function LoginPage() {
           {/* Dots */}
           <div
             className={shake ? "pin-shake" : ""}
-            style={{ display: "flex", justifyContent: "center", gap: 18, marginBottom: 10 }}
+            style={{ display: "flex", justifyContent: "center", gap: 18, marginBottom: 10, userSelect: "none" }}
           >
             {[0,1,2,3].map(i => (
               <div
