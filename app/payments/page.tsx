@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
 import { LiveBadge } from "../../components/LiveBadge";
+import { Sk } from "../../components/Skeleton";
 import { useToast } from "../../components/Toast";
 import { api } from "../../lib/api";
 import { formatDateTime, formatMoney } from "../../lib/format";
@@ -129,7 +130,11 @@ export default function PaymentsPage() {
           </button>
         </div>
 
-        {loading ? <div className="surface panel" style={{ color: "var(--muted)" }}>Yuklanmoqda...</div> : null}
+        {loading ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <Sk.Table rows={4} cols={5} />
+          </div>
+        ) : null}
         {error ? <div className="surface panel" style={{ color: "var(--danger)" }}>{error}</div> : null}
 
         {!loading && !error ? (

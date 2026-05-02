@@ -806,6 +806,20 @@ button:disabled { opacity: .4; cursor: not-allowed; transform: none !important; 
   animation: count-up 500ms ease-out;
 }
 
+/* ─── Skeleton loading ──────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+
+.sk {
+  background: linear-gradient(90deg, #e4e4e7 25%, #f0f0f1 50%, #e4e4e7 75%);
+  background-size: 1200px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
 /* ─── Animations ────────────────────────────────────────── */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(6px); }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
 import { LiveBadge } from "../../components/LiveBadge";
+import { Sk } from "../../components/Skeleton";
 import { useToast } from "../../components/Toast";
 import { api } from "../../lib/api";
 import { formatDateTime } from "../../lib/format";
@@ -126,7 +127,7 @@ export default function BookingsPage() {
           <button className="btn-secondary" onClick={() => load()}>Yangilash</button>
         </div>
 
-        {loading ? <div className="surface panel" style={{ color: "var(--muted)" }}>Yuklanmoqda...</div> : null}
+        {loading ? <Sk.Table rows={5} cols={5} /> : null}
         {error ? <div className="surface panel" style={{ color: "var(--danger)" }}>{error}</div> : null}
 
         {!loading && !error ? (

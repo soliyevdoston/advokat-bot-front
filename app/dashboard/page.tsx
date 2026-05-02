@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
 import { LiveBadge } from "../../components/LiveBadge";
+import { Sk } from "../../components/Skeleton";
 import { api } from "../../lib/api";
 import { formatDateTime, formatMoney } from "../../lib/format";
 import { usePolling } from "../../lib/usePolling";
@@ -485,7 +486,15 @@ export default function DashboardPage() {
     return (
       <AuthGuard>
         <main>
-          <div className="surface panel" style={{ color: "var(--muted)" }}>Yuklanmoqda...</div>
+          <Sk.PageHeader />
+          <Sk.Hero />
+          <Sk.StatGrid cols={4} />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 14, marginBottom: 20 }}>
+            <Sk.Card rows={4} />
+            <Sk.Card rows={4} />
+            <Sk.Card rows={4} />
+          </div>
+          <Sk.Table rows={5} cols={5} />
         </main>
       </AuthGuard>
     );

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
 import { LiveBadge } from "../../components/LiveBadge";
+import { Sk } from "../../components/Skeleton";
 import { useToast } from "../../components/Toast";
 import { api } from "../../lib/api";
 import { formatDateTime } from "../../lib/format";
@@ -210,7 +211,15 @@ export default function RequestsPage() {
           </div>
         </div>
 
-        {loading ? <div className="surface panel" style={{ color: "var(--muted)" }}>Yuklanmoqda...</div> : null}
+        {loading ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 14 }}>
+              <Sk.Card rows={3} />
+              <Sk.Card rows={3} />
+            </div>
+            <Sk.Table rows={4} cols={4} />
+          </div>
+        ) : null}
         {error ? <div className="surface panel" style={{ color: "var(--danger)" }}>{error}</div> : null}
 
         {/* Premium escalations */}
