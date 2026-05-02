@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Space_Grotesk } from "next/font/google";
+import { ConfirmProvider } from "../components/ConfirmDialog";
 import { PwaInstaller } from "../components/PwaInstaller";
 import "./globals.css";
 
@@ -36,7 +37,9 @@ export default function RootLayout({
   return (
     <html lang="uz">
       <body className={space.variable}>
-        {children}
+        <ConfirmProvider>
+          {children}
+        </ConfirmProvider>
         <PwaInstaller />
       </body>
     </html>

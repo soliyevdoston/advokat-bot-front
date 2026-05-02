@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
+import { useConfirm } from "../../components/ConfirmDialog";
 import { useToast } from "../../components/Toast";
 import { api } from "../../lib/api";
 import { formatDateTime } from "../../lib/format";
@@ -66,6 +67,7 @@ const toList = (value: string) =>
 
 export default function KnowledgePage() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [categories, setCategories] = useState<KnowledgeCategory[]>([]);
   const [entries, setEntries] = useState<KnowledgeEntry[]>([]);
   const [categoryForm, setCategoryForm] = useState<CategoryForm>(defaultCategoryForm);
@@ -277,7 +279,8 @@ export default function KnowledgePage() {
                             className="btn-danger"
                             style={{ fontSize: 13 }}
                             onClick={async () => {
-                              if (!confirm("Kategoriyani arxivlashni tasdiqlaysizmi?")) return;
+                              const ok = await confirm({ title: "Kategoriyani arxivlash", message: "Kategoriyani arxivlashni tasdiqlaysizmi?", confirmLabel: "Arxivlash", danger: true });
+                              if (!ok) return;
                               await api.delete(`/knowledge/categories/${item.id}`);
                               await load();
                             }}
@@ -471,7 +474,8 @@ export default function KnowledgePage() {
                             className="btn-danger"
                             style={{ fontSize: 13 }}
                             onClick={async () => {
-                              if (!confirm("Maqolani arxivlashni tasdiqlaysizmi?")) return;
+                              const ok = await confirm({ title: "Maqolani arxivlash", message: "Maqolani arxivlashni tasdiqlaysizmi?", confirmLabel: "Arxivlash", danger: true });
+                              if (!ok) return;
                               await api.delete(`/knowledge/entries/${item.id}`);
                               await load();
                             }}

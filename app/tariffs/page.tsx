@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
+import { useConfirm } from "../../components/ConfirmDialog";
 import { useToast } from "../../components/Toast";
 import { api } from "../../lib/api";
 import { formatMoney } from "../../lib/format";
@@ -81,6 +82,7 @@ const toPayload = (form: TariffForm) => {
 
 export default function TariffsPage() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [items, setItems] = useState<Tariff[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -145,7 +147,8 @@ export default function TariffsPage() {
   };
 
   const onDelete = async (tariff: Tariff) => {
-    if (!confirm(`"${tariff.code}" tarifini o'chirishni tasdiqlaysizmi?`)) return;
+    const ok = await confirm({ title: "Tarifni o'chirish", message: `"${tariff.code}" tarifini o'chirishni tasdiqlaysizmi? Bu amalni qaytarib bo'lmaydi.`, confirmLabel: "O'chirish", danger: true });
+    if (!ok) return;
     try {
       await api.delete(`/tariffs/${tariff.id}`);
       await load();

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
+import { useConfirm } from "../../components/ConfirmDialog";
 import { LiveBadge } from "../../components/LiveBadge";
 import { useToast } from "../../components/Toast";
 import { api } from "../../lib/api";
@@ -76,6 +77,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 export default function SlotsPage() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [slots, setSlots] = useState<Slot[]>([]);
   const [weekBase, setWeekBase] = useState(() => {
     const d = new Date();
@@ -170,7 +172,8 @@ export default function SlotsPage() {
   };
 
   const blockSlot = async (slotId: string) => {
-    if (!confirm("Bu vaqtni bloklashni tasdiqlaysizmi?")) return;
+    const ok = await confirm({ title: "Vaqtni bloklash", message: "Bu vaqt slotini bloklashni tasdiqlaysizmi? Mijozlar bron qila olmaydi.", confirmLabel: "Bloklash", danger: true });
+    if (!ok) return;
     try {
       await api.patch(`/slots/${slotId}`, { status: "BLOCKED" });
       await load();
@@ -180,7 +183,8 @@ export default function SlotsPage() {
   };
 
   const deleteSlot = async (slotId: string) => {
-    if (!confirm("Bu vaqtni butunlay o'chirishni tasdiqlaysizmi?")) return;
+    const ok = await confirm({ title: "Vaqtni o'chirish", message: "Bu vaqt sloti butunlay o'chiriladi. Bu amalni qaytarib bo'lmaydi.", confirmLabel: "O'chirish", danger: true });
+    if (!ok) return;
     try {
       await api.delete(`/slots/${slotId}`);
       await load();
