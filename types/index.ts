@@ -63,6 +63,27 @@ export interface Payment {
   receipts: PaymentReceipt[];
 }
 
+export interface SlotBooking {
+  id: string;
+  status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
+  meetLink: string | null;
+  bookedAt: string;
+  user: {
+    id: string;
+    fullName: string | null;
+    username: string | null;
+    telegramId: string | null;
+    phone: string | null;
+  };
+  payment: {
+    id: string;
+    amountMinor: number;
+    currency: string;
+    status: string;
+    tariff: { code: string; titleI18n: Record<string, string> };
+  };
+}
+
 export interface Slot {
   id: string;
   startsAt: string;
@@ -72,6 +93,7 @@ export interface Slot {
   note: string | null;
   createdByAdminId: string;
   createdAt: string;
+  bookings?: SlotBooking[];
 }
 
 export interface Booking {
