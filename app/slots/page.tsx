@@ -162,8 +162,19 @@ export default function SlotsPage() {
   const blockSlot = async (slotId: string) => {
     if (!confirm("Bu vaqtni bloklashni tasdiqlaysizmi?")) return;
     try {
+      await api.patch(`/slots/${slotId}`, { status: "BLOCKED" });
+      await load();
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
+
+  const deleteSlot = async (slotId: string) => {
+    if (!confirm("Bu vaqtni butunlay o'chirishni tasdiqlaysizmi?")) return;
+    try {
       await api.delete(`/slots/${slotId}`);
       await load();
+      toast.success("Vaqt o'chirildi");
     } catch (err) {
       toast.error((err as Error).message);
     }
@@ -415,18 +426,32 @@ export default function SlotsPage() {
                               {slot.note}
                             </div>
                           )}
-                          {slot.status !== "BLOCKED" && (
-                            <button
-                              onClick={e => { e.stopPropagation(); blockSlot(slot.id); }}
-                              style={{
-                                marginTop: 4, fontSize: 10, padding: "2px 5px",
-                                background: "var(--danger-bg)", color: "var(--danger)",
-                                border: "1px solid #fecaca", borderRadius: 4, cursor: "pointer",
-                              }}
-                            >
-                              Blok
-                            </button>
-                          )}
+                          <div style={{ display: "flex", gap: 3, marginTop: 4, flexWrap: "wrap" }}>
+                            {slot.status === "AVAILABLE" && (
+                              <button
+                                onClick={e => { e.stopPropagation(); blockSlot(slot.id); }}
+                                style={{
+                                  fontSize: 10, padding: "2px 5px",
+                                  background: "var(--danger-bg)", color: "var(--danger)",
+                                  border: "1px solid #fecaca", borderRadius: 4, cursor: "pointer",
+                                }}
+                              >
+                                Blok
+                              </button>
+                            )}
+                            {slot.status !== "BOOKED" && (
+                              <button
+                                onClick={e => { e.stopPropagation(); deleteSlot(slot.id); }}
+                                style={{
+                                  fontSize: 10, padding: "2px 5px",
+                                  background: "#1f2937", color: "#fff",
+                                  border: "none", borderRadius: 4, cursor: "pointer",
+                                }}
+                              >
+                                O'chirish
+                              </button>
+                            )}
+                          </div>
                         </div>
                       ) : (
                         <div style={{
