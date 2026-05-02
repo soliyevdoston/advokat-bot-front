@@ -8,11 +8,11 @@ import type { Slot } from "../../types";
 
 const TZ = "Asia/Tashkent";
 
-// Half-hour slots from 09:00 to 19:00 inclusive
+// Half-hour slots for full 24 hours
 const WORK_SLOTS: { h: number; m: number }[] = [];
-for (let h = 9; h <= 19; h++) {
+for (let h = 0; h <= 23; h++) {
   WORK_SLOTS.push({ h, m: 0 });
-  if (h < 19) WORK_SLOTS.push({ h, m: 30 });
+  WORK_SLOTS.push({ h, m: 30 });
 }
 
 const DAYS_UZ = ["Dush", "Sesh", "Chor", "Pay", "Juma", "Shan", "Yak"];
@@ -105,9 +105,15 @@ export default function SlotsPage() {
   const slotMap = useMemo(() => {
     const map = new Map<string, Slot>();
     for (const s of slots) {
-      const d = new Date(s.startsAt);
-      const key = slotKey(d, d.getHours(), d.getMinutes());
-      map.set(key, s);
+      const start = new Date(s.startsAt);
+      const end = new Date(s.endsAt);
+      const startMins = start.getHours() * 60 + start.getMinutes();
+      const endMins = end.getHours() * 60 + end.getMinutes();
+      for (let min = startMins; min < endMins; min += 30) {
+        const h = Math.floor(min / 60);
+        const m = min % 60;
+        map.set(slotKey(start, h, m), s);
+      }
     }
     return map;
   }, [slots]);
@@ -368,6 +374,8 @@ export default function SlotsPage() {
                 const key = slotKey(day, h, m);
                 const slot = slotMap.get(key);
                 const past = isPast(day, h, m);
+                const slotStart = slot ? new Date(slot.startsAt) : null;
+                const isSlotStart = !!(slot && slotStart!.getHours() === h && slotStart!.getMinutes() === m);
 
                 return (
                   <div
@@ -376,7 +384,7 @@ export default function SlotsPage() {
                     style={{
                       borderLeft: "1px solid var(--border)",
                       minHeight: 36,
-                      padding: 4,
+                      padding: isSlotStart ? 4 : 0,
                       cursor: slot || past ? "default" : "pointer",
                       background: slot
                         ? STATUS_BG[slot.status]
@@ -393,32 +401,42 @@ export default function SlotsPage() {
                     }}
                   >
                     {slot ? (
-                      <div style={{ fontSize: 11, padding: "2px 4px" }}>
-                        <div style={{
-                          fontWeight: 700,
-                          color: STATUS_COLOR[slot.status],
-                          marginBottom: 2,
-                        }}>
-                          {STATUS_LABEL[slot.status]}
-                        </div>
-                        {slot.note && (
-                          <div style={{ color: "var(--muted)", fontSize: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                            {slot.note}
+                      isSlotStart ? (
+                        <div style={{ fontSize: 11, padding: "2px 4px" }}>
+                          <div style={{
+                            fontWeight: 700,
+                            color: STATUS_COLOR[slot.status],
+                            marginBottom: 2,
+                          }}>
+                            {STATUS_LABEL[slot.status]}
                           </div>
-                        )}
-                        {slot.status !== "BLOCKED" && (
-                          <button
-                            onClick={e => { e.stopPropagation(); blockSlot(slot.id); }}
-                            style={{
-                              marginTop: 4, fontSize: 10, padding: "2px 5px",
-                              background: "var(--danger-bg)", color: "var(--danger)",
-                              border: "1px solid #fecaca", borderRadius: 4, cursor: "pointer",
-                            }}
-                          >
-                            Blok
-                          </button>
-                        )}
-                      </div>
+                          {slot.note && (
+                            <div style={{ color: "var(--muted)", fontSize: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {slot.note}
+                            </div>
+                          )}
+                          {slot.status !== "BLOCKED" && (
+                            <button
+                              onClick={e => { e.stopPropagation(); blockSlot(slot.id); }}
+                              style={{
+                                marginTop: 4, fontSize: 10, padding: "2px 5px",
+                                background: "var(--danger-bg)", color: "var(--danger)",
+                                border: "1px solid #fecaca", borderRadius: 4, cursor: "pointer",
+                              }}
+                            >
+                              Blok
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <div style={{
+                          width: "100%",
+                          height: "100%",
+                          minHeight: 36,
+                          background: STATUS_COLOR[slot.status],
+                          opacity: 0.25,
+                        }} />
+                      )
                     ) : past ? null : (
                       <div style={{
                         width: "100%", height: "100%", minHeight: 28,
