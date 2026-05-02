@@ -8,12 +8,22 @@ import type { Slot } from "../../types";
 
 const TZ = "Asia/Tashkent";
 
-const WORK_HOURS = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+// Half-hour slots from 09:00 to 19:00 inclusive
+const WORK_SLOTS: { h: number; m: number }[] = [];
+for (let h = 9; h <= 19; h++) {
+  WORK_SLOTS.push({ h, m: 0 });
+  if (h < 19) WORK_SLOTS.push({ h, m: 30 });
+}
+
 const DAYS_UZ = ["Dush", "Sesh", "Chor", "Pay", "Juma", "Shan", "Yak"];
 const MONTHS_UZ = [
   "Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun",
   "Iyul", "Avgust", "Sentabr", "Oktabr", "Noyabr", "Dekabr"
 ];
+
+function fmtTime(h: number, m: number) {
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
 
 function getWeekDays(baseDate: Date): Date[] {
   const d = new Date(baseDate);
@@ -36,9 +46,15 @@ function isSameDay(a: Date, b: Date) {
   return dateKey(a) === dateKey(b);
 }
 
-function slotKey(d: Date, hour: number) {
-  return `${dateKey(d)}_${hour}`;
+function slotKey(d: Date, hour: number, minute: number) {
+  return `${dateKey(d)}_${hour}_${minute}`;
 }
+
+// Encode a slot as minutes-since-midnight for bulk state (e.g. 9:30 → 570)
+function encodeSlot(h: number, m: number) { return h * 60 + m; }
+function decodeSlot(v: number) { return { h: Math.floor(v / 60), m: v % 60 }; }
+
+const DEFAULT_BULK_SLOTS = [9, 10, 11, 14, 15, 16].map(h => encodeSlot(h, 0));
 
 const STATUS_COLOR: Record<string, string> = {
   AVAILABLE: "#16a34a",
@@ -49,11 +65,6 @@ const STATUS_BG: Record<string, string> = {
   AVAILABLE: "#f0fdf4",
   BOOKED: "#fffbeb",
   BLOCKED: "#fef2f2",
-};
-const STATUS_BORDER: Record<string, string> = {
-  AVAILABLE: "#bbf7d0",
-  BOOKED: "#fde68a",
-  BLOCKED: "#fecaca",
 };
 const STATUS_LABEL: Record<string, string> = {
   AVAILABLE: "Bo'sh",
@@ -69,12 +80,12 @@ export default function SlotsPage() {
     d.setHours(0, 0, 0, 0);
     return d;
   });
-  const [adding, setAdding] = useState<{ day: Date; hour: number } | null>(null);
+  const [adding, setAdding] = useState<{ day: Date; hour: number; minute: number } | null>(null);
   const [duration, setDuration] = useState(60);
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [bulkMode, setBulkMode] = useState(false);
-  const [bulkHours, setBulkHours] = useState<number[]>([9, 10, 11, 14, 15, 16]);
+  const [bulkSlots, setBulkSlots] = useState<number[]>(DEFAULT_BULK_SLOTS);
   const [bulkDays, setBulkDays] = useState<number[]>([0, 1, 2, 3, 4]);
   const [bulkWeeks, setBulkWeeks] = useState(1);
 
@@ -95,7 +106,7 @@ export default function SlotsPage() {
     const map = new Map<string, Slot>();
     for (const s of slots) {
       const d = new Date(s.startsAt);
-      const key = slotKey(d, d.getHours());
+      const key = slotKey(d, d.getHours(), d.getMinutes());
       map.set(key, s);
     }
     return map;
@@ -104,19 +115,19 @@ export default function SlotsPage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const isPast = (d: Date, hour: number) => {
+  const isPast = (d: Date, hour: number, minute: number) => {
     const t = new Date(d);
-    t.setHours(hour, 0, 0, 0);
+    t.setHours(hour, minute, 0, 0);
     return t < new Date();
   };
 
-  const openAdd = (day: Date, hour: number) => {
-    if (isPast(day, hour)) return;
-    const key = slotKey(day, hour);
+  const openAdd = (day: Date, hour: number, minute: number) => {
+    if (isPast(day, hour, minute)) return;
+    const key = slotKey(day, hour, minute);
     if (slotMap.has(key)) return;
     setNote("");
     setDuration(60);
-    setAdding({ day, hour });
+    setAdding({ day, hour, minute });
   };
 
   const saveSlot = async () => {
@@ -124,7 +135,7 @@ export default function SlotsPage() {
     setSaving(true);
     try {
       const start = new Date(adding.day);
-      start.setHours(adding.hour, 0, 0, 0);
+      start.setHours(adding.hour, adding.minute, 0, 0);
       const end = new Date(start);
       end.setMinutes(end.getMinutes() + duration);
       await api.post("/slots", {
@@ -156,13 +167,13 @@ export default function SlotsPage() {
   const nextWeek = () => setWeekBase(d => { const n = new Date(d); n.setDate(n.getDate() + 7); return n; });
   const goToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); setWeekBase(d); };
 
-  const toggleBulkHour = (h: number) =>
-    setBulkHours(prev => prev.includes(h) ? prev.filter(x => x !== h) : [...prev, h].sort((a,b) => a-b));
+  const toggleBulkSlot = (key: number) =>
+    setBulkSlots(prev => prev.includes(key) ? prev.filter(x => x !== key) : [...prev, key].sort((a, b) => a - b));
   const toggleBulkDay = (d: number) =>
-    setBulkDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d].sort((a,b) => a-b));
+    setBulkDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d].sort((a, b) => a - b));
 
   const saveBulk = async () => {
-    if (bulkDays.length === 0 || bulkHours.length === 0) return;
+    if (bulkDays.length === 0 || bulkSlots.length === 0) return;
     setSaving(true);
     try {
       const base = new Date(weekBase);
@@ -172,14 +183,15 @@ export default function SlotsPage() {
         for (const dayIdx of bulkDays) {
           const d = new Date(base);
           d.setDate(base.getDate() + dayIdx + w * 7);
-          for (const hour of bulkHours) {
+          for (const encoded of bulkSlots) {
+            const { h, m } = decodeSlot(encoded);
             const start = new Date(d);
-            start.setHours(hour, 0, 0, 0);
+            start.setHours(h, m, 0, 0);
             if (start < new Date()) continue;
-            const key = slotKey(d, hour);
+            const key = slotKey(d, h, m);
             if (slotMap.has(key)) continue;
             const end = new Date(start);
-            end.setMinutes(60);
+            end.setMinutes(end.getMinutes() + 60);
             toCreate.push({ startsAt: start.toISOString(), endsAt: end.toISOString(), timezone: TZ });
           }
         }
@@ -236,20 +248,25 @@ export default function SlotsPage() {
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600, marginBottom: 8 }}>Soatlar:</div>
+                <div style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600, marginBottom: 8 }}>Vaqtlar:</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {WORK_HOURS.map(h => (
-                    <button
-                      key={h}
-                      onClick={() => toggleBulkHour(h)}
-                      style={{
-                        padding: "6px 10px", borderRadius: 8, fontSize: 13, cursor: "pointer", border: "none",
-                        background: bulkHours.includes(h) ? "var(--ink)" : "var(--hover)",
-                        color: bulkHours.includes(h) ? "#fff" : "var(--ink-2)",
-                        fontWeight: bulkHours.includes(h) ? 700 : 400,
-                      }}
-                    >{h}:00</button>
-                  ))}
+                  {WORK_SLOTS.map(({ h, m }) => {
+                    const key = encodeSlot(h, m);
+                    const active = bulkSlots.includes(key);
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => toggleBulkSlot(key)}
+                        style={{
+                          padding: "5px 10px", borderRadius: 8, fontSize: 12, cursor: "pointer", border: "none",
+                          background: active ? "var(--ink)" : "var(--hover)",
+                          color: active ? "#fff" : "var(--ink-2)",
+                          fontWeight: active ? 700 : 400,
+                          opacity: m === 30 ? 0.85 : 1,
+                        }}
+                      >{fmtTime(h, m)}</button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -262,10 +279,10 @@ export default function SlotsPage() {
               />
               <button
                 className="btn-primary"
-                disabled={saving || bulkDays.length === 0 || bulkHours.length === 0}
+                disabled={saving || bulkDays.length === 0 || bulkSlots.length === 0}
                 onClick={saveBulk}
               >
-                {saving ? "Saqlanmoqda..." : `Qo'shish (${bulkDays.length * bulkHours.length * bulkWeeks} ta)`}
+                {saving ? "Saqlanmoqda..." : `Qo'shish (${bulkDays.length * bulkSlots.length * bulkWeeks} ta)`}
               </button>
             </div>
           </div>
@@ -295,6 +312,7 @@ export default function SlotsPage() {
 
         {/* Calendar grid */}
         <div className="surface panel" style={{ padding: 0, overflow: "hidden" }}>
+          {/* Day headers */}
           <div style={{
             display: "grid",
             gridTemplateColumns: "52px repeat(7, 1fr)",
@@ -323,37 +341,41 @@ export default function SlotsPage() {
             })}
           </div>
 
-          {WORK_HOURS.map(hour => (
+          {/* Time rows — one per half-hour */}
+          {WORK_SLOTS.map(({ h, m }) => (
             <div
-              key={hour}
+              key={`${h}_${m}`}
               style={{
                 display: "grid",
                 gridTemplateColumns: "52px repeat(7, 1fr)",
-                borderBottom: "1px solid var(--border)",
+                borderBottom: m === 0 ? "1px solid var(--border)" : "1px dashed var(--border)",
               }}
             >
               <div style={{
-                padding: "8px 4px",
+                padding: "4px 4px",
                 textAlign: "center",
-                fontSize: 11,
-                color: "var(--muted)",
-                fontWeight: 600,
+                fontSize: m === 0 ? 11 : 10,
+                color: m === 0 ? "var(--muted)" : "var(--border-2)",
+                fontWeight: m === 0 ? 600 : 400,
                 borderRight: "1px solid var(--border)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}>
-                {hour}:00
+                {fmtTime(h, m)}
               </div>
               {weekDays.map((day, di) => {
-                const key = slotKey(day, hour);
+                const key = slotKey(day, h, m);
                 const slot = slotMap.get(key);
-                const past = isPast(day, hour);
+                const past = isPast(day, h, m);
 
                 return (
                   <div
                     key={di}
-                    onClick={() => slot ? undefined : openAdd(day, hour)}
+                    onClick={() => slot ? undefined : openAdd(day, h, m)}
                     style={{
                       borderLeft: "1px solid var(--border)",
-                      minHeight: 46,
+                      minHeight: 36,
                       padding: 4,
                       cursor: slot || past ? "default" : "pointer",
                       background: slot
@@ -399,7 +421,7 @@ export default function SlotsPage() {
                       </div>
                     ) : past ? null : (
                       <div style={{
-                        width: "100%", height: "100%", minHeight: 38,
+                        width: "100%", height: "100%", minHeight: 28,
                         display: "flex", alignItems: "center", justifyContent: "center",
                         color: "var(--border-2)", fontSize: 16, fontWeight: 300,
                       }}>+</div>
@@ -423,11 +445,12 @@ export default function SlotsPage() {
             <div className="surface panel" style={{ width: "100%", maxWidth: 400 }}>
               <h2 style={{ marginBottom: 4, fontSize: 16 }}>Yangi vaqt qo'shish</h2>
               <p style={{ color: "var(--muted)", marginTop: 0, marginBottom: 16, fontSize: 14 }}>
-                📅 {DAYS_UZ[adding.day.getDay() === 0 ? 6 : adding.day.getDay() - 1]}, {adding.day.getDate()} {MONTHS_UZ[adding.day.getMonth()]} — {adding.hour}:00
+                📅 {DAYS_UZ[adding.day.getDay() === 0 ? 6 : adding.day.getDay() - 1]},{" "}
+                {adding.day.getDate()} {MONTHS_UZ[adding.day.getMonth()]} — {fmtTime(adding.hour, adding.minute)}
               </p>
               <div className="grid" style={{ gap: 12 }}>
                 <label className="grid" style={{ gap: 6 }}>
-                  <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>Davomiyligi (daqiqa)</span>
+                  <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>Davomiyligi</span>
                   <select
                     value={duration}
                     onChange={e => setDuration(Number(e.target.value))}
