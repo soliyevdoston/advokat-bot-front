@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
+import { LiveBadge } from "../../components/LiveBadge";
 import { useToast } from "../../components/Toast";
 import { api } from "../../lib/api";
+import { usePolling } from "../../lib/usePolling";
 import type { Slot, SlotBooking } from "../../types";
 
 const TZ = "Asia/Tashkent";
@@ -104,6 +106,7 @@ export default function SlotsPage() {
   };
 
   useEffect(() => { void load(); }, []);
+  usePolling(load, 10000);
 
   useEffect(() => {
     currentRowRef.current?.scrollIntoView({ behavior: "instant", block: "center" });
@@ -240,7 +243,7 @@ export default function SlotsPage() {
       <main>
         {/* Header */}
         <div className="page-header" style={{ marginBottom: 16 }}>
-          <h1 className="page-title">Vaqt jadvali</h1>
+          <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>Vaqt jadvali <LiveBadge /></h1>
           <div style={{ display: "flex", gap: 8 }}>
             <button className="btn-secondary" onClick={() => { setBulkMode(m => !m); }}>
               {bulkMode ? "✕ Yopish" : "⚡ Ommaviy qo'shish"}

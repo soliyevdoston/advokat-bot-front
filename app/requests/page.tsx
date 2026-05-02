@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
+import { LiveBadge } from "../../components/LiveBadge";
 import { useToast } from "../../components/Toast";
 import { api } from "../../lib/api";
 import { formatDateTime } from "../../lib/format";
+import { usePolling } from "../../lib/usePolling";
 import type { EscalationItem, Payment } from "../../types";
 
 type BookingQueueItem = {
@@ -65,9 +67,8 @@ export default function RequestsPage() {
   const [error, setError] = useState<string | null>(null);
   const [sendingId, setSendingId] = useState<string | null>(null);
 
-  const load = async () => {
-    setLoading(true);
-    setError(null);
+  const load = async (silent = false) => {
+    if (!silent) { setLoading(true); setError(null); }
     try {
       const [pending, approved, bookings, escalations] = await Promise.all([
         api.get<Payment[]>("/payments?status=PENDING"),
@@ -80,13 +81,14 @@ export default function RequestsPage() {
       setUpcomingBookings(bookings);
       setPremiumEscalations(escalations.filter(e => e.reason?.includes("PREMIUM")));
     } catch (err) {
-      setError((err as Error).message);
+      if (!silent) setError((err as Error).message);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => { void load(); }, []);
+  usePolling(() => load(true), 6000);
 
   const sendPremiumLink = async (esc: EscalationItem) => {
     const tgId = esc.user?.telegramId;
@@ -183,8 +185,8 @@ export default function RequestsPage() {
     <AuthGuard>
       <main>
         <div className="page-header">
-          <h1 className="page-title">Murojaatlar navbati</h1>
-          <button className="btn-secondary" onClick={load} disabled={loading}>
+          <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>Murojaatlar navbati <LiveBadge /></h1>
+          <button className="btn-secondary" onClick={() => load()} disabled={loading}>
             {loading ? "Yuklanmoqda..." : "Yangilash"}
           </button>
         </div>

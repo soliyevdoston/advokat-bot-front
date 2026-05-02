@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
+import { LiveBadge } from "../../components/LiveBadge";
 import { useToast } from "../../components/Toast";
 import { api } from "../../lib/api";
 import { formatDateTime } from "../../lib/format";
+import { usePolling } from "../../lib/usePolling";
 
 type BookingScheduleItem = {
   id: string;
@@ -72,22 +74,20 @@ export default function BookingsPage() {
   const [link, setLink] = useState("");
   const [sending, setSending] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
-    setError(null);
+  const load = async (silent = false) => {
+    if (!silent) { setLoading(true); setError(null); }
     try {
       const data = await api.get<BookingScheduleItem[]>("/bookings?upcoming=true");
       setItems(data);
     } catch (err) {
-      setError((err as Error).message);
+      if (!silent) setError((err as Error).message);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
-  useEffect(() => {
-    void load();
-  }, []);
+  useEffect(() => { void load(); }, []);
+  usePolling(() => load(true), 8000);
 
   const openModal = (item: BookingScheduleItem) => {
     setLink("");
@@ -122,8 +122,8 @@ export default function BookingsPage() {
     <AuthGuard>
       <main>
         <div className="page-header">
-          <h1 className="page-title">Bronlar jadvali</h1>
-          <button className="btn-secondary" onClick={load}>Yangilash</button>
+          <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>Bronlar jadvali <LiveBadge /></h1>
+          <button className="btn-secondary" onClick={() => load()}>Yangilash</button>
         </div>
 
         {loading ? <div className="surface panel" style={{ color: "var(--muted)" }}>Yuklanmoqda...</div> : null}

@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
+import { LiveBadge } from "../../components/LiveBadge";
 import { api } from "../../lib/api";
 import { formatDateTime, formatMoney } from "../../lib/format";
+import { usePolling } from "../../lib/usePolling";
 import { WaveChart, type WavePoint } from "../../components/WaveChart";
 import type {
   AdminAnalytics,
@@ -449,8 +451,8 @@ export default function DashboardPage() {
   const [upcoming, setUpcoming] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async (silent = false) => {
+    if (!silent) setLoading(true);
     const [dashboardResult, analyticsResult, revenueResult, upcomingResult] = await Promise.allSettled([
       api.get<AdminDashboard>("/admin/dashboard"),
       api.get<AdminAnalytics>("/admin/analytics?rangeDays=30"),
@@ -462,21 +464,22 @@ export default function DashboardPage() {
     let nextAnalytics = analyticsResult.status === "fulfilled" ? analyticsResult.value : null;
     let nextRevenue = revenueResult.status === "fulfilled" ? revenueResult.value : null;
 
-    if (!nextStats || !nextAnalytics || !nextRevenue) {
+    if (!silent && (!nextStats || !nextAnalytics || !nextRevenue)) {
       const fallback = await loadDashboardFallbackData();
       if (!nextStats) nextStats = buildDashboardFromFallback(fallback);
       if (!nextAnalytics) nextAnalytics = buildAnalyticsFromFallback(fallback);
       if (!nextRevenue) nextRevenue = buildRevenueFromApprovedPayments(fallback.approvedPayments);
     }
 
-    setStats(nextStats ?? emptyStats);
-    setAnalytics(nextAnalytics ?? emptyAnalytics);
-    setRevenue(nextRevenue);
+    if (nextStats) setStats(nextStats);
+    if (nextAnalytics) setAnalytics(nextAnalytics);
+    if (nextRevenue) setRevenue(nextRevenue);
     setUpcoming(upcomingResult.status === "fulfilled" ? upcomingResult.value : []);
-    setLoading(false);
+    if (!silent) setLoading(false);
   };
 
   useEffect(() => { void load(); }, []);
+  usePolling(() => load(true), 10000);
 
   if (loading) {
     return (
@@ -520,8 +523,8 @@ export default function DashboardPage() {
       <main>
         {/* Header */}
         <div className="page-header" style={{ marginBottom: 20 }}>
-          <h1 className="page-title">Dashboard</h1>
-          <button className="btn-secondary" onClick={load}>Yangilash</button>
+          <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>Dashboard <LiveBadge /></h1>
+          <button className="btn-secondary" onClick={() => load()}>Yangilash</button>
         </div>
 
         {/* ── HERO ── */}

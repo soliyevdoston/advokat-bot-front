@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
+import { LiveBadge } from "../../components/LiveBadge";
 import { useToast } from "../../components/Toast";
 import { api } from "../../lib/api";
 import { formatDateTime, formatMoney } from "../../lib/format";
+import { usePolling } from "../../lib/usePolling";
 import type { Payment } from "../../types";
 
 const revokeObjectUrls = (items: Record<string, string>) => {
@@ -52,28 +54,35 @@ export default function PaymentsPage() {
     return Object.fromEntries(entries.filter((entry): entry is readonly [string, string] => entry !== null));
   };
 
-  const load = async () => {
-    setLoading(true);
-    setError(null);
+  const load = async (silent = false) => {
+    if (!silent) { setLoading(true); setError(null); }
     try {
       const data = await api.get<Payment[]>("/payments?status=PENDING");
-      const previews = await buildReceiptPreviews(data);
-
-      setItems(data);
-      setReceiptPreviewMap((prev) => {
-        revokeObjectUrls(prev);
-        return previews;
-      });
+      if (silent) {
+        setItems(prev => {
+          const existingIds = new Set(prev.map(p => p.id));
+          const newOnes = data.filter(p => !existingIds.has(p.id));
+          if (newOnes.length > 0) {
+            buildReceiptPreviews(newOnes).then(newPreviews => {
+              setReceiptPreviewMap(m => ({ ...m, ...newPreviews }));
+            });
+          }
+          return data;
+        });
+      } else {
+        const previews = await buildReceiptPreviews(data);
+        setItems(data);
+        setReceiptPreviewMap((prev) => { revokeObjectUrls(prev); return previews; });
+      }
     } catch (err) {
-      setError((err as Error).message);
+      if (!silent) setError((err as Error).message);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
-  useEffect(() => {
-    void load();
-  }, []);
+  useEffect(() => { void load(); }, []);
+  usePolling(() => load(true), 6000);
 
   const openModerate = (paymentId: string, action: "approve" | "reject") => {
     setActionModal({ id: paymentId, action, note: "" });
@@ -114,8 +123,8 @@ export default function PaymentsPage() {
     <AuthGuard>
       <main>
         <div className="page-header">
-          <h1 className="page-title">To'lovlar moderatsiyasi</h1>
-          <button className="btn-secondary" onClick={load} disabled={loading}>
+          <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>To'lovlar moderatsiyasi <LiveBadge /></h1>
+          <button className="btn-secondary" onClick={() => load()} disabled={loading}>
             {loading ? "Yuklanmoqda..." : "Yangilash"}
           </button>
         </div>
