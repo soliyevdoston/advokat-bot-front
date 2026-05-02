@@ -87,7 +87,10 @@ export default function LoginPage() {
       `}</style>
       <main style={{
         minHeight: "100vh", display: "grid", placeItems: "center",
-        padding: "20px", background: "#fafafa",
+        padding: "20px",
+        backgroundColor: "#ececed",
+        backgroundImage: "linear-gradient(rgba(0,0,0,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.06) 1px,transparent 1px)",
+        backgroundSize: "28px 28px",
       }}>
         <div style={{ width: "100%", maxWidth: 340, textAlign: "center" }}>
           {/* Brand */}

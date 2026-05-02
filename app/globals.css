@@ -43,7 +43,11 @@ html, body { margin: 0; padding: 0; }
 
 body {
   font-family: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
-  background: var(--bg);
+  background-color: #ececed;
+  background-image:
+    linear-gradient(rgba(0,0,0,.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,.06) 1px, transparent 1px);
+  background-size: 28px 28px;
   color: var(--ink);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -443,7 +447,47 @@ button:disabled { opacity: .4; cursor: not-allowed; transform: none !important; 
 
   .page-shell > main {
     margin-left: 0;
-    padding: 72px 16px 48px;
+    padding: 20px 14px calc(80px + env(safe-area-inset-bottom));
+  }
+
+  /* Stack page header vertically on mobile */
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .page-title { font-size: 18px; }
+
+  /* Compact panels */
+  .panel { padding: 14px; }
+
+  /* Smaller stat numbers */
+  .stat-number { font-size: 26px; }
+
+  /* Full-width buttons in page headers on mobile */
+  .page-header .btn-primary,
+  .page-header .btn-secondary {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  /* Touch-friendly inputs */
+  .input {
+    font-size: 16px; /* prevents iOS auto-zoom */
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+
+  select.input { min-height: 44px; }
+
+  /* Touch-friendly buttons */
+  .btn-primary, .btn-secondary, .btn-danger, .btn-ghost {
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: 14px;
   }
 
   .admin-split { grid-template-columns: 1fr; }
@@ -455,10 +499,41 @@ button:disabled { opacity: .4; cursor: not-allowed; transform: none !important; 
     -webkit-overflow-scrolling: touch;
   }
 
+  .table th, .table td {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  /* Modals full-width on mobile */
+  .surface.panel[style*="maxWidth"] {
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+  }
+
   /* On mobile we use the BottomNav — hide the desktop sidebar entirely. */
   .sidebar { display: none; }
   .sidebar-toggle { display: none; }
   .sidebar-overlay { display: none; }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .page-shell > main {
+    padding: 16px 10px calc(80px + env(safe-area-inset-bottom));
+  }
+
+  .panel { padding: 12px; }
+
+  .page-title { font-size: 16px; }
+
+  .stat-number { font-size: 22px; }
+
+  .stat-card { padding: 14px; }
+
+  .table th, .table td { padding: 8px 10px; font-size: 12px; }
+
+  /* Tighter grid gaps */
+  .grid { gap: 10px; }
 }
 
 @media (min-width: 901px) {
