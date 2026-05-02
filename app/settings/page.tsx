@@ -185,7 +185,75 @@ export default function SettingsPage() {
             </div>
           </div>
         </section>
+
+        {/* PIN section */}
+        <PinSection />
       </main>
     </AuthGuard>
+  );
+}
+
+function PinSection() {
+  const toast = useToast();
+  const [pin, setPin] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const submit = async () => {
+    if (!/^\d{4}$/.test(pin)) { toast.error("PIN 4 ta raqamdan iborat bo'lishi kerak"); return; }
+    if (pin !== confirm) { toast.error("PIN kodlar mos kelmadi"); return; }
+    setSaving(true);
+    try {
+      await api.post("/auth/set-pin", { pin });
+      toast.success("PIN kodi o'rnatildi");
+      setPin(""); setConfirm("");
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="surface panel">
+      <h2 style={{ marginBottom: 4, fontSize: 15, fontWeight: 700 }}>PIN kodi</h2>
+      <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0, marginBottom: 16 }}>
+        Login sahifasida parol o'rniga 4 xonali PIN bilan kirish uchun
+      </p>
+      <div style={{ display: "grid", gap: 12, maxWidth: 320 }}>
+        <label style={{ display: "grid", gap: 5 }}>
+          <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>Yangi PIN (4 ta raqam)</span>
+          <input
+            className="input"
+            type="password"
+            inputMode="numeric"
+            maxLength={4}
+            value={pin}
+            onChange={e => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+            placeholder="••••"
+          />
+        </label>
+        <label style={{ display: "grid", gap: 5 }}>
+          <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>Tasdiqlash</span>
+          <input
+            className="input"
+            type="password"
+            inputMode="numeric"
+            maxLength={4}
+            value={confirm}
+            onChange={e => setConfirm(e.target.value.replace(/\D/g, "").slice(0, 4))}
+            placeholder="••••"
+          />
+        </label>
+        <button
+          className="btn-primary"
+          disabled={saving || pin.length !== 4 || confirm.length !== 4}
+          onClick={submit}
+          style={{ width: "fit-content" }}
+        >
+          {saving ? "Saqlanmoqda..." : "PIN o'rnatish"}
+        </button>
+      </div>
+    </section>
   );
 }
