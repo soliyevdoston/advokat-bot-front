@@ -19,7 +19,7 @@ const IMPORTANT_KEYS = [
 ];
 
 const keyLabel: Record<string, string> = {
-  payment_details: "To'lov ma'lumotlari",
+  payment_details: "💳 To'lov rekvizitlari",
   ai_routing: "AI yo'naltirish",
   ai_clarification: "AI aniqlik filtri",
   ai_voice: "AI uslubi",
@@ -33,9 +33,14 @@ const keyLabel: Record<string, string> = {
 export default function SettingsPage() {
   const toast = useToast();
   const [items, setItems] = useState<SettingItem[]>([]);
-  const [selectedKey, setSelectedKey] = useState<string>("");
+  const [selectedKey, setSelectedKey] = useState<string>("payment_details");
   const [description, setDescription] = useState("");
   const [valueText, setValueText] = useState("{}");
+
+  // payment_details special fields
+  const [pdUz, setPdUz] = useState("");
+  const [pdRu, setPdRu] = useState("");
+  const [pdEn, setPdEn] = useState("");
 
   const sorted = useMemo(
     () => [...items].sort((a, b) => a.key.localeCompare(b.key)),
@@ -46,9 +51,6 @@ export default function SettingsPage() {
     try {
       const rows = await api.get<SettingItem[]>("/settings");
       setItems(rows);
-      if (!selectedKey && rows.length > 0) {
-        setSelectedKey(rows[0].key);
-      }
     } catch (err) {
       toast.error((err as Error).message);
     }
@@ -60,17 +62,43 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const item = sorted.find((row) => row.key === selectedKey);
-    if (!item) return;
+    if (!item) {
+      setDescription("");
+      setValueText("{}");
+      if (selectedKey === "payment_details") {
+        setPdUz(""); setPdRu(""); setPdEn("");
+      }
+      return;
+    }
     setDescription(item.description || "");
     setValueText(JSON.stringify(item.valueJson, null, 2));
+    if (selectedKey === "payment_details") {
+      const v = item.valueJson as Record<string, string> | null;
+      setPdUz(v?.uz ?? "");
+      setPdRu(v?.ru ?? "");
+      setPdEn(v?.en ?? "");
+    }
   }, [selectedKey, sorted]);
+
+  const savePaymentDetails = async () => {
+    if (!pdUz.trim()) { toast.error("O'zbekcha matn talab qilinadi"); return; }
+    try {
+      await api.put("/settings/payment_details", {
+        valueJson: { uz: pdUz.trim(), ru: pdRu.trim() || pdUz.trim(), en: pdEn.trim() || pdUz.trim() },
+        description: "Bot orqali to'lov qilishda ko'rsatiladigan karta/rekvizit ma'lumotlari"
+      });
+      await load();
+      toast.success("To'lov rekvizitlari saqlandi ✅");
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
 
   const save = async () => {
     if (!selectedKey.trim()) {
       toast.error("Kalit talab qilinadi.");
       return;
     }
-
     let parsed: unknown;
     try {
       parsed = JSON.parse(valueText);
@@ -78,7 +106,6 @@ export default function SettingsPage() {
       toast.error(`Noto'g'ri JSON: ${(err as Error).message}`);
       return;
     }
-
     try {
       await api.put(`/settings/${selectedKey}`, {
         valueJson: parsed,
@@ -94,6 +121,7 @@ export default function SettingsPage() {
   return (
     <AuthGuard>
       <main className="admin-split">
+        {/* Left: key list */}
         <section className="surface panel">
           <h2 style={{ marginBottom: 8 }}>Sozlama kalitlari</h2>
           <p style={{ color: "var(--muted)", fontSize: 14, marginTop: 0 }}>
@@ -141,55 +169,133 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* Right: editor */}
         <section className="surface panel">
-          <h2 style={{ marginBottom: 16 }}>Sozlamani tahrirlash</h2>
-          <div className="grid" style={{ gap: 12 }}>
-            <label className="grid" style={{ gap: 6 }}>
-              <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>Kalit</span>
-              <input
-                className="input"
-                value={selectedKey}
-                onChange={(e) => setSelectedKey(e.target.value)}
-                placeholder="sozlama_kaliti"
-              />
-            </label>
+          {selectedKey === "payment_details" ? (
+            <PaymentDetailsForm
+              uz={pdUz} setUz={setPdUz}
+              ru={pdRu} setRu={setPdRu}
+              en={pdEn} setEn={setPdEn}
+              onSave={savePaymentDetails}
+              onReload={load}
+            />
+          ) : (
+            <>
+              <h2 style={{ marginBottom: 16 }}>Sozlamani tahrirlash</h2>
+              <div className="grid" style={{ gap: 12 }}>
+                <label className="grid" style={{ gap: 6 }}>
+                  <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>Kalit</span>
+                  <input
+                    className="input"
+                    value={selectedKey}
+                    onChange={(e) => setSelectedKey(e.target.value)}
+                    placeholder="sozlama_kaliti"
+                  />
+                </label>
 
-            <label className="grid" style={{ gap: 6 }}>
-              <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>Tavsif</span>
-              <input
-                className="input"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Bu sozlama nimani boshqaradi"
-              />
-            </label>
+                <label className="grid" style={{ gap: 6 }}>
+                  <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>Tavsif</span>
+                  <input
+                    className="input"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Bu sozlama nimani boshqaradi"
+                  />
+                </label>
 
-            <label className="grid" style={{ gap: 6 }}>
-              <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>JSON qiymati</span>
-              <textarea
-                className="input"
-                rows={18}
-                value={valueText}
-                onChange={(e) => setValueText(e.target.value)}
-                style={{ fontFamily: "monospace", fontSize: 13 }}
-              />
-            </label>
+                <label className="grid" style={{ gap: 6 }}>
+                  <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>JSON qiymati</span>
+                  <textarea
+                    className="input"
+                    rows={18}
+                    value={valueText}
+                    onChange={(e) => setValueText(e.target.value)}
+                    style={{ fontFamily: "monospace", fontSize: 13 }}
+                  />
+                </label>
 
-            <div style={{ display: "flex", gap: 8 }}>
-              <button className="btn-primary" onClick={save}>
-                Saqlash
-              </button>
-              <button className="btn-secondary" onClick={load}>
-                Qayta yuklash
-              </button>
-            </div>
-          </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button className="btn-primary" onClick={save}>Saqlash</button>
+                  <button className="btn-secondary" onClick={load}>Qayta yuklash</button>
+                </div>
+              </div>
+            </>
+          )}
         </section>
 
-        {/* PIN section */}
         <PinSection />
       </main>
     </AuthGuard>
+  );
+}
+
+function PaymentDetailsForm({
+  uz, setUz, ru, setRu, en, setEn, onSave, onReload,
+}: {
+  uz: string; setUz: (v: string) => void;
+  ru: string; setRu: (v: string) => void;
+  en: string; setEn: (v: string) => void;
+  onSave: () => void;
+  onReload: () => void;
+}) {
+  return (
+    <div className="grid" style={{ gap: 20 }}>
+      <div>
+        <h2 style={{ marginBottom: 4 }}>💳 To'lov rekvizitlari</h2>
+        <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0 }}>
+          Mijoz to'lov tugmasini bosganda botda ko'rsatiladigan matn. Karta raqamini yoki bank rekvizitlarini kiriting.
+        </p>
+      </div>
+
+      <div style={{
+        padding: "12px 16px", borderRadius: 10,
+        background: "rgba(234,179,8,0.1)", border: "1px solid rgba(234,179,8,0.3)",
+        fontSize: 13, color: "#92400e"
+      }}>
+        ⚠️ O'zbekcha maydon talab qilinadi. Ruscha va inglizcha bo'sh qolsa, o'zbekcha matn ishlatiladi.
+      </div>
+
+      <label className="grid" style={{ gap: 6 }}>
+        <span style={{ fontSize: 13, fontWeight: 700 }}>🇺🇿 O'zbekcha</span>
+        <textarea
+          className="input"
+          rows={4}
+          value={uz}
+          onChange={e => setUz(e.target.value)}
+          placeholder={"To'lovni quyidagi karta raqamiga o'tkazing:\n\n8600 XXXX XXXX XXXX\n\nIzoh: To'lov miqdori — 50,000 so'm"}
+          style={{ fontFamily: "monospace", fontSize: 14, lineHeight: 1.6 }}
+        />
+      </label>
+
+      <label className="grid" style={{ gap: 6 }}>
+        <span style={{ fontSize: 13, fontWeight: 700 }}>🇷🇺 Ruscha</span>
+        <textarea
+          className="input"
+          rows={4}
+          value={ru}
+          onChange={e => setRu(e.target.value)}
+          placeholder={"Переведите оплату на карту:\n\n8600 XXXX XXXX XXXX\n\nСумма: 50 000 сум"}
+          style={{ fontFamily: "monospace", fontSize: 14, lineHeight: 1.6 }}
+        />
+      </label>
+
+      <label className="grid" style={{ gap: 6 }}>
+        <span style={{ fontSize: 13, fontWeight: 700 }}>🇬🇧 Inglizcha</span>
+        <textarea
+          className="input"
+          rows={4}
+          value={en}
+          onChange={e => setEn(e.target.value)}
+          placeholder={"Please transfer payment to the card:\n\n8600 XXXX XXXX XXXX\n\nAmount: 50,000 UZS"}
+          style={{ fontFamily: "monospace", fontSize: 14, lineHeight: 1.6 }}
+        />
+      </label>
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <button className="btn-primary" onClick={onSave}>💾 Saqlash</button>
+        <button className="btn-secondary" onClick={onReload}>Qayta yuklash</button>
+      </div>
+    </div>
   );
 }
 
