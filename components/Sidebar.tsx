@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
-import { clearTokens } from "../lib/auth";
+import { clearTokens, getAccessToken } from "../lib/auth";
 
 const nav = [
   {
@@ -29,6 +29,7 @@ const nav = [
   {
     href: "/payments",
     label: "To'lovlar",
+    badge: true,
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>
@@ -138,10 +139,46 @@ const nav = [
   },
 ];
 
+// In-page toast for new payment alert
+function PaymentToast({ count, onClose }: { count: number; onClose: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 6000);
+    return () => clearTimeout(t);
+  }, [onClose]);
+
+  return (
+    <div style={{
+      position: "fixed", bottom: 24, right: 24, zIndex: 9999,
+      background: "#1f2937", color: "#fff",
+      padding: "14px 20px", borderRadius: 12,
+      boxShadow: "0 8px 32px rgba(0,0,0,0.35)",
+      display: "flex", alignItems: "center", gap: 12,
+      fontSize: 14, fontWeight: 600, maxWidth: 320,
+      animation: "slideUp 0.25s ease",
+    }}>
+      <span style={{ fontSize: 22 }}>💳</span>
+      <div>
+        <div>{count} ta yangi to'lov kutmoqda!</div>
+        <div style={{ fontSize: 12, fontWeight: 400, color: "#9ca3af", marginTop: 2 }}>
+          To'lovlar sahifasini tekshiring
+        </div>
+      </div>
+      <button onClick={onClose} style={{
+        marginLeft: "auto", background: "none", border: "none",
+        color: "#9ca3af", cursor: "pointer", fontSize: 18, lineHeight: 1,
+      }}>✕</button>
+    </div>
+  );
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [showToast, setShowToast] = useState(false);
+  const prevCountRef = useRef<number | null>(null);
+  const notifPermRef = useRef(false);
 
   useEffect(() => { setOpen(false); }, [pathname]);
 
@@ -151,11 +188,56 @@ export function Sidebar() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Request browser notification permission once
+  useEffect(() => {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    if (Notification.permission === "default") {
+      void Notification.requestPermission().then(p => {
+        notifPermRef.current = p === "granted";
+      });
+    } else {
+      notifPermRef.current = Notification.permission === "granted";
+    }
+  }, []);
+
+  // Poll pending payments count every 15s
+  useEffect(() => {
+    const check = async () => {
+      if (!getAccessToken()) return;
+      try {
+        const data = await api.get<{ pendingPaymentApprovals: number }>("/admin/dashboard");
+        const count = data.pendingPaymentApprovals ?? 0;
+        setPendingCount(count);
+
+        // Only alert if count increased (not on first load)
+        if (prevCountRef.current !== null && count > prevCountRef.current) {
+          const diff = count - prevCountRef.current;
+          // In-page toast
+          setShowToast(true);
+          // Browser notification
+          if (notifPermRef.current) {
+            new Notification("💳 Yangi to'lov!", {
+              body: `${diff} ta yangi to'lov tasdiqlash kutmoqda`,
+              icon: "/icon-192.png",
+            });
+          }
+        }
+        prevCountRef.current = count;
+      } catch {
+        // ignore auth/network errors
+      }
+    };
+
+    void check();
+    const id = setInterval(check, 15000);
+    return () => clearInterval(id);
+  }, []);
+
   const logout = async () => {
     try {
       await api.post("/auth/logout", {});
     } catch {
-      // best-effort: even if the call fails (e.g. token expired) we still clear local state
+      // best-effort
     }
     clearTokens();
     router.replace("/login");
@@ -163,6 +245,17 @@ export function Sidebar() {
 
   return (
     <>
+      <style>{`
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(16px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
+      {showToast && (
+        <PaymentToast count={pendingCount} onClose={() => setShowToast(false)} />
+      )}
+
       <button
         type="button"
         className="sidebar-toggle"
@@ -171,6 +264,13 @@ export function Sidebar() {
         aria-controls="admin-sidebar"
       >
         ☰ Menyu
+        {pendingCount > 0 && (
+          <span style={{
+            marginLeft: 8, background: "#ef4444", color: "#fff",
+            borderRadius: 99, fontSize: 11, fontWeight: 700,
+            padding: "1px 7px", lineHeight: "18px",
+          }}>{pendingCount}</span>
+        )}
       </button>
 
       {open && <div className="sidebar-overlay" onClick={() => setOpen(false)} />}
@@ -185,6 +285,7 @@ export function Sidebar() {
         <nav className="sidebar-nav">
           {nav.map(item => {
             const active = pathname === item.href || pathname?.startsWith(item.href + "/");
+            const hasBadge = item.badge && pendingCount > 0;
             return (
               <Link
                 key={item.href}
@@ -192,7 +293,14 @@ export function Sidebar() {
                 className={`sidebar-link${active ? " active" : ""}`}
               >
                 <span style={{ flexShrink: 0, display: "flex" }}>{item.icon}</span>
-                <span>{item.label}</span>
+                <span style={{ flex: 1 }}>{item.label}</span>
+                {hasBadge && (
+                  <span style={{
+                    background: "#ef4444", color: "#fff",
+                    borderRadius: 99, fontSize: 11, fontWeight: 700,
+                    padding: "1px 7px", lineHeight: "18px", flexShrink: 0,
+                  }}>{pendingCount}</span>
+                )}
               </Link>
             );
           })}
