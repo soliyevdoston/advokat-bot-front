@@ -81,6 +81,7 @@ export default function RequestsPage() {
       await api.post(`/payments/${modal.paymentId}/schedule`, {
         format: modal.format,
         datetime: formatted,
+        datetimeISO: new Date(modal.datetime).toISOString(),
         ...(modal.format === "zoom" ? { zoomLink: modal.zoomLink.trim() } : {}),
         ...(modal.format === "visit" ? { address: modal.address.trim() } : {}),
       });
