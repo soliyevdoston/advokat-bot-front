@@ -13,7 +13,7 @@ type Tab = "PENDING" | "APPROVED" | "REJECTED";
 
 const TAB_LABEL: Record<Tab, string> = {
   PENDING: "⏳ Kutilmoqda",
-  APPROVED: "✅ To'langan",
+  APPROVED: "✅ Tasdiqlanganlar",
   REJECTED: "❌ Rad etilgan",
 };
 
@@ -329,16 +329,26 @@ function PaymentCard({
             </div>
           )}
 
-          {/* For approved/rejected — just show receipt link */}
-          {tab !== "PENDING" && receipt && (
-            <div style={{ marginTop: 8 }}>
-              <button
-                className="btn-secondary"
-                onClick={() => onOpenReceipt(receipt.id)}
-                style={{ fontSize: 12, padding: "4px 10px" }}
-              >
-                🧾 Chekni ko'rish
-              </button>
+          {/* For approved/rejected — show queue badge and receipt link */}
+          {tab !== "PENDING" && (
+            <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              {tab === "APPROVED" && (
+                <span style={{
+                  fontSize: 11, fontWeight: 700, padding: "2px 10px", borderRadius: 6,
+                  background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe",
+                }}>
+                  📋 Navbatda
+                </span>
+              )}
+              {receipt && (
+                <button
+                  className="btn-secondary"
+                  onClick={() => onOpenReceipt(receipt.id)}
+                  style={{ fontSize: 12, padding: "4px 10px" }}
+                >
+                  🧾 Chekni ko'rish
+                </button>
+              )}
             </div>
           )}
         </div>

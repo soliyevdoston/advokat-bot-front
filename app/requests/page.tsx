@@ -3,114 +3,89 @@
 import { useEffect, useState } from "react";
 import { AuthGuard } from "../../components/AuthGuard";
 import { LiveBadge } from "../../components/LiveBadge";
-import { Sk } from "../../components/Skeleton";
 import { useToast } from "../../components/Toast";
 import { api } from "../../lib/api";
-import { formatDateTime } from "../../lib/format";
+import { formatDateTime, formatMoney } from "../../lib/format";
 import { usePolling } from "../../lib/usePolling";
-import type { EscalationItem } from "../../types";
+import type { Payment } from "../../types";
 
-type AppointmentFormat = "zoom" | "phone" | "visit";
+const ADVOCATE_CODES = ["advocate_physical", "advocate_legal", "advocate_foreign"];
 
-type AppointmentModal = {
-  escalationId: string;
-  telegramId: string;
-  lang: "UZ" | "RU" | "EN";
+type ScheduleModal = {
+  paymentId: string;
   clientName: string;
+  phone: string;
+  lang: "UZ" | "RU" | "EN";
+  format: "zoom" | "phone" | "visit";
   datetime: string;
-  format: AppointmentFormat;
   zoomLink: string;
+  address: string;
 };
 
-const clientName = (params: { fullName: string | null; username: string | null; id: string }) =>
-  params.fullName || params.username || params.id.slice(0, 8);
-
-const contactFromReason = (reason: string | null): string => {
-  if (!reason) return "–";
-  const m =
-    reason.match(/contact_confirmed:(.+)$/) ??
-    reason.match(/contact:(.+)$/) ??
-    reason.match(/contact_request:(.+)$/);
-  return m ? decodeURIComponent(m[1]) : "–";
-};
-
-const reasonLabel = (reason: string | null): string => {
-  if (!reason) return "Noma'lum";
-  if (reason.startsWith("advocate_consult:")) {
-    const fmt = reason.split(":")[2];
-    if (fmt === "zoom") return "🎥 Zoom maslahat";
-    if (fmt === "phone") return "📞 Telefon maslahat";
-    if (fmt === "visit") return "🤝 Yuzma-yuz maslahat";
-    return "Advokat maslahat";
-  }
-  if (reason.includes("contact_confirmed")) return "📞 Aloqa tasdiqlangan";
-  if (reason.includes("PREMIUM")) return "⭐ Premium";
-  if (reason.includes("qabul")) return "📅 Qabul";
-  return reason.slice(0, 40);
-};
+const getClientName = (p: Payment) =>
+  p.user?.fullName || p.user?.username || p.user?.id?.slice(0, 8) || "Mijoz";
 
 export default function RequestsPage() {
   const toast = useToast();
-  const [escalations, setEscalations] = useState<EscalationItem[]>([]);
+  const [items, setItems] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [modal, setModal] = useState<AppointmentModal | null>(null);
+  const [modal, setModal] = useState<ScheduleModal | null>(null);
   const [sending, setSending] = useState(false);
+  const [scheduled, setScheduled] = useState<Set<string>>(new Set());
 
   const load = async (silent = false) => {
-    if (!silent) { setLoading(true); setError(null); }
+    if (!silent) setLoading(true);
     try {
-      const data = await api.get<EscalationItem[]>("/admin/escalations?limit=100");
-      setEscalations(data.filter(e => e.status === "OPEN" || e.status === "IN_PROGRESS"));
+      const data = await api.get<Payment[]>("/payments?status=APPROVED");
+      const advocate = data.filter(p => ADVOCATE_CODES.includes(p.tariff?.code ?? ""));
+      // Sort by createdAt ascending (oldest first = first in queue)
+      advocate.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      setItems(advocate);
     } catch (err) {
-      if (!silent) setError((err as Error).message);
+      if (!silent) toast.error((err as Error).message);
     } finally {
       if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => { void load(); }, []);
-  usePolling(() => load(true), 8000);
+  usePolling(() => load(true), 10000);
 
-  const openModal = (esc: EscalationItem) => {
-    const tgId = esc.user?.telegramId;
-    if (!tgId) { toast.error("Telegram ID yo'q"); return; }
+  const openModal = (p: Payment) => {
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    const datetimeLocal = now.toISOString().slice(0, 16);
     setModal({
-      escalationId: esc.id,
-      telegramId: tgId,
-      lang: (esc.user?.language ?? "UZ") as "UZ" | "RU" | "EN",
-      clientName: clientName(esc.user),
-      datetime: datetimeLocal,
-      format: "zoom",
+      paymentId: p.id,
+      clientName: getClientName(p),
+      phone: p.user?.phone ?? "",
+      lang: (p.user?.language ?? "UZ") as "UZ" | "RU" | "EN",
+      format: "phone",
+      datetime: now.toISOString().slice(0, 16),
       zoomLink: "",
+      address: "",
     });
   };
 
-  const sendAppointment = async () => {
+  const sendSchedule = async () => {
     if (!modal) return;
     if (!modal.datetime) { toast.error("Sana va vaqtni kiriting"); return; }
-    if (modal.format === "zoom" && !modal.zoomLink.trim()) {
-      toast.error("Zoom link kiriting");
-      return;
-    }
+    if (modal.format === "zoom" && !modal.zoomLink.trim()) { toast.error("Zoom link kiriting"); return; }
+    if (modal.format === "visit" && !modal.address.trim()) { toast.error("Manzilni kiriting"); return; }
     setSending(true);
     try {
       const dt = new Date(modal.datetime);
       const formatted = dt.toLocaleString("uz-UZ", {
         day: "2-digit", month: "2-digit", year: "numeric",
-        hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tashkent"
+        hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tashkent",
       });
-      await api.post("/admin/send-appointment", {
-        telegramId: modal.telegramId,
-        lang: modal.lang,
-        datetime: formatted,
+      await api.post(`/payments/${modal.paymentId}/schedule`, {
         format: modal.format,
+        datetime: formatted,
         ...(modal.format === "zoom" ? { zoomLink: modal.zoomLink.trim() } : {}),
+        ...(modal.format === "visit" ? { address: modal.address.trim() } : {}),
       });
-      toast.success("Xabar mijozga yuborildi!");
+      setScheduled(prev => new Set([...prev, modal.paymentId]));
+      toast.success("Suhbat belgilandi! Mijozga xabar yuborildi.");
       setModal(null);
     } catch (err) {
       toast.error((err as Error).message);
@@ -119,221 +94,164 @@ export default function RequestsPage() {
     }
   };
 
+  const tariffLabel = (p: Payment) => {
+    const code = p.tariff?.code ?? "";
+    if (code === "advocate_physical") return "👤 Jismoniy";
+    if (code === "advocate_legal") return "🏢 Yuridik";
+    if (code === "advocate_foreign") return "🌍 Chet el";
+    return code;
+  };
+
   return (
     <AuthGuard>
       <main>
         <div className="page-header">
           <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            Qabul so&apos;rovlari <LiveBadge />
+            Navbat <LiveBadge />
           </h1>
-          <button className="btn-secondary" onClick={() => load()} disabled={loading}>
-            {loading ? "Yuklanmoqda..." : "Yangilash"}
-          </button>
-        </div>
-
-        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", marginBottom: 20 }}>
-          <div className="surface panel stat-card">
-            <div className="stat-number" style={{ color: "var(--danger)" }}>
-              {escalations.filter(e => e.status === "OPEN").length}
-            </div>
-            <div className="stat-label">Yangi so&apos;rovlar</div>
-          </div>
-          <div className="surface panel stat-card">
-            <div className="stat-number" style={{ color: "var(--warn)" }}>
-              {escalations.filter(e => e.status === "IN_PROGRESS").length}
-            </div>
-            <div className="stat-label">Jarayonda</div>
-          </div>
-          <div className="surface panel stat-card">
-            <div className="stat-number" style={{ color: "#f59e0b" }}>
-              {escalations.filter(e => e.reason?.includes("PREMIUM")).length}
-            </div>
-            <div className="stat-label">⭐ Premium</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <span style={{ fontSize: 13, color: "var(--muted)", alignSelf: "center" }}>
+              {items.length} ta tasdiqlangan to&apos;lov
+            </span>
+            <button className="btn-secondary" onClick={() => load()} disabled={loading}>
+              Yangilash
+            </button>
           </div>
         </div>
 
         {loading ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <Sk.Card rows={3} />
-            <Sk.Card rows={3} />
-          </div>
-        ) : null}
-        {error ? <div className="surface panel" style={{ color: "var(--danger)" }}>{error}</div> : null}
-
-        {!loading && !error && escalations.length === 0 && (
+          <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>Yuklanmoqda...</div>
+        ) : items.length === 0 ? (
           <div className="surface panel">
-            <div className="empty-state">Ochiq so&apos;rovlar yo&apos;q</div>
+            <div className="empty-state">
+              <p>Navbatda hech kim yo&apos;q.</p>
+              <p style={{ fontSize: 13 }}>Tasdiqlanagan to&apos;lovlar bu yerda ko&apos;rinadi.</p>
+            </div>
           </div>
-        )}
-
-        {!loading && !error && escalations.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {escalations.map((esc) => {
-              const tgId = esc.user?.telegramId;
-              const contact = contactFromReason(esc.reason);
-              const label = reasonLabel(esc.reason);
-              const isPremium = esc.reason?.includes("PREMIUM");
-              return (
-                <div
-                  key={esc.id}
-                  className="surface panel"
-                  style={{
-                    borderLeft: `4px solid ${isPremium ? "#f59e0b" : esc.status === "IN_PROGRESS" ? "var(--warn)" : "var(--danger)"}`,
-                    padding: "14px 18px",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
-                    <div style={{ flex: 1, minWidth: 200 }}>
-                      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
-                        {clientName(esc.user)}
-                        {isPremium && (
-                          <span style={{ marginLeft: 8, background: "#f59e0b", color: "#fff", borderRadius: 4, padding: "1px 7px", fontSize: 11 }}>
-                            PREMIUM
-                          </span>
-                        )}
-                        <span style={{
-                          marginLeft: 8,
-                          background: esc.status === "IN_PROGRESS" ? "var(--warn)" : "var(--danger)",
-                          color: "#fff", borderRadius: 4, padding: "1px 7px", fontSize: 11
-                        }}>
-                          {esc.status === "IN_PROGRESS" ? "Jarayonda" : "Yangi"}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 2 }}>
-                        {label}
-                      </div>
-                      <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 2 }}>
-                        Aloqa: <b>{contact}</b>
-                      </div>
-                      {tgId && (
-                        <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 2 }}>
-                          Telegram: {tgId}
-                        </div>
-                      )}
-                      {esc.user?.phone && (
-                        <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 2 }}>
-                          Tel: {esc.user.phone}
-                        </div>
-                      )}
-                      <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
-                        {formatDateTime(esc.createdAt)}
-                      </div>
-                    </div>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
-                      {tgId ? (
-                        <button
-                          className="btn-primary"
-                          style={{ fontSize: 13, padding: "7px 14px", whiteSpace: "nowrap" }}
-                          onClick={() => openModal(esc)}
-                        >
-                          📅 Uchrashuv belgilash
-                        </button>
-                      ) : (
-                        <span style={{ fontSize: 12, color: "var(--muted)" }}>Telegram ID yo&apos;q</span>
-                      )}
+        ) : (
+          <div style={{ display: "grid", gap: 14 }}>
+            {items.map((p, idx) => (
+              <div key={p.id} className="surface panel" style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                flexWrap: "wrap", gap: 14,
+                borderLeft: scheduled.has(p.id) ? "4px solid var(--ok)" : "4px solid var(--accent)",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: "50%",
+                    background: "var(--accent)", color: "#fff",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontWeight: 700, fontSize: 15, flexShrink: 0,
+                  }}>{idx + 1}</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <div style={{ fontWeight: 700, fontSize: 15 }}>{getClientName(p)}</div>
+                    <div style={{ fontSize: 12, color: "var(--muted)", display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      {p.user?.phone && <span>📞 {p.user.phone}</span>}
+                      <span>{tariffLabel(p)}</span>
+                      <span>{formatMoney(p.amountMinor, p.currency)}</span>
+                      <span>🕒 {formatDateTime(p.createdAt)}</span>
                     </div>
                   </div>
                 </div>
-              );
-            })}
+                <div>
+                  {scheduled.has(p.id) ? (
+                    <span style={{
+                      fontSize: 12, fontWeight: 700, padding: "4px 12px", borderRadius: 8,
+                      background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0",
+                    }}>
+                      ✅ Belgilandi
+                    </span>
+                  ) : (
+                    <button className="btn-primary" onClick={() => openModal(p)}>
+                      📅 Suhbat belgilash
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
-        {/* Appointment modal */}
+        {/* Schedule Modal */}
         {modal && (
-          <div
-            style={{
-              position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
-              display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
-            }}
-            onClick={(e) => { if (e.target === e.currentTarget) setModal(null); }}
-          >
-            <div
-              className="surface"
-              style={{ borderRadius: "var(--radius)", padding: 28, width: "100%", maxWidth: 440, boxShadow: "0 8px 32px rgba(0,0,0,0.18)" }}
-            >
-              <h2 style={{ margin: "0 0 18px", fontSize: 17 }}>
-                📅 Uchrashuv belgilash — {modal.clientName}
-              </h2>
+          <div style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            zIndex: 200, padding: 16,
+          }} onClick={e => { if (e.target === e.currentTarget) setModal(null); }}>
+            <div className="surface panel" style={{ width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto" }}>
+              <h2 style={{ marginBottom: 4, fontSize: 17 }}>📅 Suhbat belgilash</h2>
+              <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0, marginBottom: 20 }}>
+                <strong>{modal.clientName}</strong>
+                {modal.phone && <> · 📞 {modal.phone}</>}
+              </p>
 
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>
-                  Sana va vaqt
-                </label>
-                <input
-                  type="datetime-local"
-                  className="input"
-                  value={modal.datetime}
-                  onChange={e => setModal(m => m ? { ...m, datetime: e.target.value } : m)}
-                  style={{ width: "100%", boxSizing: "border-box" }}
-                />
-              </div>
-
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 8 }}>
-                  Uchrashuv turi
-                </label>
-                <div style={{ display: "flex", gap: 8 }}>
-                  {(["zoom", "phone", "visit"] as AppointmentFormat[]).map(fmt => (
-                    <button
-                      key={fmt}
-                      onClick={() => setModal(m => m ? { ...m, format: fmt } : m)}
-                      style={{
-                        flex: 1, padding: "8px 6px", borderRadius: "var(--radius)",
-                        border: `2px solid ${modal.format === fmt ? "var(--accent)" : "var(--border)"}`,
-                        background: modal.format === fmt ? "var(--accent)" : "var(--surface)",
-                        color: modal.format === fmt ? "#fff" : "var(--ink)",
-                        cursor: "pointer", fontSize: 13, fontWeight: 600,
-                      }}
-                    >
-                      {fmt === "zoom" ? "🎥 Zoom" : fmt === "phone" ? "📞 Telefon" : "🤝 Yuzma-yuz"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {modal.format === "zoom" && (
-                <div style={{ marginBottom: 14 }}>
-                  <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>
-                    Zoom link
+              <div style={{ display: "grid", gap: 16 }}>
+                {/* Format */}
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    Suhbat usuli
                   </label>
-                  <input
-                    type="url"
-                    className="input"
-                    placeholder="https://zoom.us/j/..."
-                    value={modal.zoomLink}
-                    onChange={e => setModal(m => m ? { ...m, zoomLink: e.target.value } : m)}
-                    style={{ width: "100%", boxSizing: "border-box" }}
-                  />
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
+                    {(["phone", "zoom", "visit"] as const).map(f => (
+                      <button
+                        key={f}
+                        type="button"
+                        className={modal.format === f ? "btn-primary" : "btn-secondary"}
+                        onClick={() => setModal({ ...modal, format: f })}
+                        style={{ fontSize: 13 }}
+                      >
+                        {f === "phone" ? "📞 Telefon" : f === "zoom" ? "🎥 Zoom" : "🤝 Yuzma-yuz"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              )}
 
-              <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-                <button
-                  className="btn-secondary"
-                  style={{ flex: 1 }}
-                  onClick={() => setModal(null)}
-                  disabled={sending}
-                >
-                  Bekor qilish
-                </button>
-                <button
-                  className="btn-primary"
-                  style={{ flex: 2 }}
-                  onClick={sendAppointment}
-                  disabled={sending}
-                >
-                  {sending ? "Yuborilmoqda..." : "📤 Mijozga yuborish"}
-                </button>
-              </div>
+                {/* Datetime */}
+                <label style={{ display: "grid", gap: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Sana va vaqt</span>
+                  <input
+                    type="datetime-local"
+                    className="input"
+                    value={modal.datetime}
+                    onChange={e => setModal({ ...modal, datetime: e.target.value })}
+                  />
+                </label>
 
-              <div style={{ marginTop: 14, fontSize: 12, color: "var(--muted)" }}>
-                {modal.format === "zoom"
-                  ? "Mijozga Zoom havolasi yuboriladi"
-                  : modal.format === "phone"
-                  ? "Mijozga siz chaqirasiz deb xabar yuboriladi"
-                  : "Mijozga yuzma-yuz uchrashuv tasdiqlanadi"}
+                {/* Zoom link */}
+                {modal.format === "zoom" && (
+                  <label style={{ display: "grid", gap: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Zoom havola</span>
+                    <input
+                      className="input"
+                      placeholder="https://zoom.us/j/..."
+                      value={modal.zoomLink}
+                      onChange={e => setModal({ ...modal, zoomLink: e.target.value })}
+                    />
+                  </label>
+                )}
+
+                {/* Address */}
+                {modal.format === "visit" && (
+                  <label style={{ display: "grid", gap: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Manzil</span>
+                    <input
+                      className="input"
+                      placeholder="Farg&apos;ona shahri, Al-Farg&apos;oniy ko&apos;chasi, 15-uy"
+                      value={modal.address}
+                      onChange={e => setModal({ ...modal, address: e.target.value })}
+                    />
+                  </label>
+                )}
+
+                <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                  <button className="btn-primary" onClick={sendSchedule} disabled={sending} style={{ flex: 1 }}>
+                    {sending ? "Yuborilmoqda..." : "✅ Tasdiqlash va yuborish"}
+                  </button>
+                  <button className="btn-secondary" onClick={() => setModal(null)}>
+                    Bekor
+                  </button>
+                </div>
               </div>
             </div>
           </div>
