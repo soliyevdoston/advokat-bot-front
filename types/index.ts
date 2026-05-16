@@ -1,5 +1,7 @@
 export type Role = "CLIENT" | "ADMIN";
 
+export type LeadStatus = "NEW" | "THINKING" | "NO_BUDGET";
+
 export interface User {
   id: string;
   fullName: string | null;
@@ -11,6 +13,7 @@ export interface User {
   phone?: string | null;
   region?: string | null;
   isActive?: boolean;
+  leadStatus?: LeadStatus | null;
   createdAt?: string;
 }
 

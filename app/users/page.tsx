@@ -92,12 +92,17 @@ export default function UsersPage() {
                   {items.map((user) => (
                     <tr key={user.id}>
                       <td>
-                        <div style={{ fontWeight: 700 }}>{user.fullName || user.username || user.id.slice(0, 8)}</div>
-                        <div style={{ fontSize: 12, color: "var(--muted)" }}>id: {user.id.slice(0, 8)}...</div>
+                        <div style={{ fontWeight: 700 }}>{user.fullName || "–"}</div>
+                        {user.username && (
+                          <div style={{ fontSize: 13, color: "#3b82f6", fontWeight: 600 }}>@{user.username}</div>
+                        )}
+                        <div style={{ fontSize: 12, color: "var(--muted)" }}>id: {user.id.slice(0, 8)}…</div>
                       </td>
                       <td>
-                        <div>{user.phone || "–"}</div>
-                        <div style={{ fontSize: 12, color: "var(--muted)" }}>{user.telegramId ? `tg:${user.telegramId}` : "–"}</div>
+                        <div style={{ fontWeight: 500 }}>{user.phone || "–"}</div>
+                        {user.telegramId && (
+                          <div style={{ fontSize: 12, color: "var(--muted)" }}>TG: {user.telegramId}</div>
+                        )}
                       </td>
                       <td>{user.language}</td>
                       <td>{user.role}</td>

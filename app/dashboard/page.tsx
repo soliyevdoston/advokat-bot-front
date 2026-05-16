@@ -22,6 +22,100 @@ import type {
   User
 } from "../../types";
 
+/* ─── DayRevenueSelector ─── */
+function DayRevenueSelector({ dayStats }: { dayStats: AdminRevenue["dayStats"] }) {
+  const [selectedDate, setSelectedDate] = useState("");
+  const [customResult, setCustomResult] = useState<{ amount: number; count: number; currency: string } | null>(null);
+  const [customLoading, setCustomLoading] = useState(false);
+  const [customError, setCustomError] = useState("");
+
+  const lookupLocal = (date: string) => {
+    const found = dayStats.find(d => d.date === date);
+    return found ?? null;
+  };
+
+  const handleSearch = async () => {
+    if (!selectedDate) return;
+    setCustomError("");
+
+    const local = lookupLocal(selectedDate);
+    if (local) {
+      setCustomResult(local);
+      return;
+    }
+
+    // Date not in 30-day cache → ask backend with custom range
+    setCustomLoading(true);
+    try {
+      const data = await api.get<AdminRevenue>(`/admin/revenue?from=${selectedDate}&to=${selectedDate}`);
+      const day = data.dayStats.find(d => d.date === selectedDate);
+      if (day) {
+        setCustomResult(day);
+      } else {
+        setCustomResult({ amount: 0, count: 0, currency: "UZS" });
+      }
+    } catch {
+      setCustomError("Ma'lumot yuklanmadi");
+    } finally {
+      setCustomLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ marginTop: 20, borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+        Kunlik daromad ko'rish
+      </div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
+        <input
+          type="date"
+          className="input"
+          style={{ width: 170 }}
+          value={selectedDate}
+          onChange={e => { setSelectedDate(e.target.value); setCustomResult(null); setCustomError(""); }}
+          max={new Date().toISOString().slice(0, 10)}
+        />
+        <button
+          className="btn-primary"
+          style={{ padding: "9px 20px" }}
+          onClick={handleSearch}
+          disabled={!selectedDate || customLoading}
+        >
+          {customLoading ? "…" : "Ko'rish"}
+        </button>
+        {customResult && (
+          <button
+            className="btn-secondary"
+            style={{ padding: "9px 14px" }}
+            onClick={() => { setCustomResult(null); setSelectedDate(""); }}
+          >
+            Tozalash
+          </button>
+        )}
+      </div>
+
+      {customError && (
+        <div style={{ marginTop: 10, color: "var(--danger)", fontSize: 13 }}>{customError}</div>
+      )}
+
+      {customResult && (
+        <div style={{ marginTop: 14, display: "flex", gap: 16, flexWrap: "wrap" }}>
+          <div className="stat-card" style={{ minWidth: 180 }}>
+            <div className="stat-number" style={{ color: customResult.amount > 0 ? "var(--ok)" : "var(--muted)" }}>
+              {customResult.amount > 0 ? formatMoney(customResult.amount, customResult.currency || "UZS") : "0"}
+            </div>
+            <div className="stat-label">{selectedDate} · Daromad</div>
+          </div>
+          <div className="stat-card" style={{ minWidth: 130 }}>
+            <div className="stat-number">{customResult.count}</div>
+            <div className="stat-label">To'lovlar soni</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── empty states ─── */
 const emptyStats: AdminDashboard = {
   totalUsers: 0, totalPaidRequests: 0, pendingPaymentApprovals: 0,
@@ -524,8 +618,9 @@ export default function DashboardPage() {
 
   const todayRevenue = revenue?.today;
   const todayRevenueText = todayRevenue ? formatRevAmount(todayRevenue.byCurrency) : "—";
+  const weekRevenueText  = revenue ? formatRevAmount(revenue.week.byCurrency) : "—";
   const monthRevenueText = revenue ? formatRevAmount(revenue.month.byCurrency) : "—";
-  const yearRevenueText = revenue ? formatRevAmount(revenue.year.byCurrency) : "—";
+  const yearRevenueText  = revenue ? formatRevAmount(revenue.year.byCurrency) : "—";
 
   return (
     <AuthGuard>
@@ -547,6 +642,10 @@ export default function DashboardPage() {
               </p>
             </div>
             <div className="dash-hero-stats">
+              <div className="dash-hero-stat">
+                <div className="dash-hero-stat-value">{weekRevenueText}</div>
+                <div className="dash-hero-stat-label">Bu hafta</div>
+              </div>
               <div className="dash-hero-stat">
                 <div className="dash-hero-stat-value">{monthRevenueText}</div>
                 <div className="dash-hero-stat-label">Bu oy</div>
@@ -626,7 +725,7 @@ export default function DashboardPage() {
             <div style={{ display: "flex", gap: 14, fontSize: 12, color: "var(--muted)" }}>
               <span>
                 <strong style={{ color: "var(--ok)", fontSize: 16 }}>
-                  {revenue ? formatRevAmount(revenue.week.byCurrency) : "—"}
+                  {weekRevenueText}
                 </strong>
                 <span style={{ marginLeft: 6 }}>shu hafta</span>
               </span>
@@ -641,6 +740,9 @@ export default function DashboardPage() {
             formatValue={(v) => formatMoney(Math.round(v * 100), "UZS")}
             ariaLabel="Daromad grafigi"
           />
+
+          {/* ── Kunlik daromad qidirish ── */}
+          <DayRevenueSelector dayStats={revenue?.dayStats ?? []} />
         </div>
 
         {/* ── Savollar to'lqini ── */}
