@@ -1,6 +1,6 @@
 export type Role = "CLIENT" | "ADMIN";
 
-export type LeadStatus = "NEW" | "THINKING" | "NO_BUDGET";
+export type LeadStatus = "NEW" | "THINKING" | "NO_BUDGET" | "DECLINED" | "RESOLVED";
 
 export interface User {
   id: string;
