@@ -776,9 +776,8 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* ── Compact metric grid (rest) ── */}
+        {/* ── Key metrics row ── */}
         <div className="surface panel" style={{ marginBottom: 20 }}>
-          <SectionTitle>Boshqa ko'rsatkichlar</SectionTitle>
           <div
             className="grid"
             style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}
@@ -789,31 +788,21 @@ export default function DashboardPage() {
               color="var(--warn)"
             />
             <StatCard
-              label="Rad etilgan to'lovlar"
-              value={stats.rejectedPayments}
-              color="var(--danger)"
-            />
-            <StatCard
               label="Qoniqmagan mijozlar"
               value={stats.unsatisfiedCount}
               color="var(--danger)"
             />
-            <StatCard label="Jami pullik so'rovlar" value={stats.totalPaidRequests} />
             <StatCard
               label="Advokatga yo'naltirilgan"
               value={stats.redirectedToAdvocate}
             />
-            <StatCard label="Bilim bazasi" value={stats.knowledgeEntries} />
-            <StatCard label="Tariflar" value={stats.tariffs} />
           </div>
         </div>
 
         {/* ── Top tariflar ── */}
-        <div className="surface panel" style={{ marginBottom: 20 }}>
-          <SectionTitle>Eng ko'p sotib olingan tariflar (30 kun)</SectionTitle>
-          {analytics.topTariffs.length === 0 ? (
-            <p style={{ color: "var(--muted)", fontSize: 13 }}>Ma'lumot yo'q</p>
-          ) : (
+        {analytics.topTariffs.length > 0 && (
+          <div className="surface panel" style={{ marginBottom: 20 }}>
+            <SectionTitle>Eng ko'p sotib olingan tariflar (30 kun)</SectionTitle>
             <table className="table">
               <thead>
                 <tr><th>#</th><th>Tarif</th><th>Sotilgan</th></tr>
@@ -831,57 +820,8 @@ export default function DashboardPage() {
                 ))}
               </tbody>
             </table>
-          )}
-        </div>
-
-        {/* ── 5. Ko'p beriladigan savollar ── */}
-        <div className="surface panel" style={{ marginBottom: 20 }}>
-          <SectionTitle>Ko'p beriladigan savollar (30 kun)</SectionTitle>
-          {analytics.topQuestions.length === 0 ? (
-            <p style={{ color: "var(--muted)", fontSize: 13 }}>Ma'lumot yo'q</p>
-          ) : (
-            <table className="table">
-              <thead>
-                <tr><th>#</th><th>Savol</th><th>Soni</th></tr>
-              </thead>
-              <tbody>
-                {analytics.topQuestions.map((row, idx) => (
-                  <tr key={`${row.text}-${idx}`}>
-                    <td style={{ color: "var(--muted)", width: 40 }}>{idx + 1}</td>
-                    <td style={{ fontSize: 13 }}>{row.text}</td>
-                    <td><span className="tag tag-info">{row.count}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-
-        {/* ── 6. So'nggi faollik ── */}
-        <div className="surface panel">
-          <SectionTitle>So'nggi faollik</SectionTitle>
-          {stats.recentActivity.length === 0 ? (
-            <p style={{ color: "var(--muted)", fontSize: 13 }}>Faollik yo'q</p>
-          ) : (
-            <div style={{ overflowX: "auto" }}>
-              <table className="table">
-                <thead>
-                  <tr><th>Vaqt</th><th>Amal</th><th>Manba</th><th>ID</th></tr>
-                </thead>
-                <tbody>
-                  {stats.recentActivity.map((item) => (
-                    <tr key={item.id}>
-                      <td style={{ whiteSpace: "nowrap", color: "var(--muted)", fontSize: 12 }}>{formatDateTime(item.createdAt)}</td>
-                      <td><code style={{ fontSize: 12 }}>{item.action}</code></td>
-                      <td style={{ fontSize: 13 }}>{item.resource}</td>
-                      <td style={{ fontFamily: "monospace", fontSize: 11, color: "var(--muted)" }}>{item.resourceId?.slice(0, 10) || "–"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </main>
     </AuthGuard>
   );

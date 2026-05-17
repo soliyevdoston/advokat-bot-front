@@ -17,6 +17,7 @@ const MORE = [
   { href: "/conversations", label: "Mijoz suhbati", icon: chatIcon },
   { href: "/unresolved", label: "Qabul so'rovlari", icon: warnIcon },
   { href: "/users", label: "Mijozlar", icon: usersIcon },
+  { href: "/leads", label: "Leadlar", icon: leadsIcon },
   { href: "/bookings", label: "Bronlar", icon: bookingIcon },
   { href: "/revenue", label: "Daromad", icon: revenueIcon },
   { href: "/tariffs", label: "Tariflar", icon: tariffsIcon },
@@ -290,6 +291,16 @@ function lockIcon() {
     <>
       <rect x="3" y="11" width="18" height="11" rx="2" />
       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </>
+  );
+}
+
+function leadsIcon() {
+  return svg(
+    <>
+      <rect x="3" y="3" width="5" height="18" rx="1" />
+      <rect x="10" y="7" width="5" height="14" rx="1" />
+      <rect x="17" y="11" width="5" height="10" rx="1" />
     </>
   );
 }

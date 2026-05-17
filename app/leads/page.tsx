@@ -170,7 +170,8 @@ export default function LeadsPage() {
     <AuthGuard>
       <style>{`
         .kanban-board { display: flex; gap: 14px; align-items: flex-start; overflow-x: auto; padding-bottom: 12px; }
-        .kanban-col { flex: 0 0 280px; background: var(--surface); border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; max-height: calc(100vh - 180px); }
+        .kanban-col { flex: 0 0 280px; background: var(--surface); border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; max-height: calc(100vh - 240px); }
+        @media (max-width: 480px) { .kanban-col { flex: 0 0 240px; } }
         .kanban-col-header { padding: 12px 14px 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; background: var(--surface); border-radius: 12px 12px 0 0; }
         .kanban-col-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
         .kanban-col-title { font-weight: 700; font-size: 13px; }
@@ -205,13 +206,13 @@ export default function LeadsPage() {
         .modal-val { font-weight: 500; word-break: break-all; }
       `}</style>
 
-      <main style={{ paddingBottom: 0 }}>
+      <main>
         <div className="page-header">
           <h1 className="page-title">Leadlar</h1>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, width: "100%" }}>
             <input
               className="input"
-              style={{ width: 220 }}
+              style={{ flex: 1, minWidth: 0 }}
               placeholder="Ism, telefon, username..."
               value={search}
               onChange={e => setSearch(e.target.value)}
