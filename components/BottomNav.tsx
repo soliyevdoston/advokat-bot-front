@@ -10,7 +10,6 @@ const PRIMARY = [
   { href: "/dashboard", label: "Dashboard", icon: dashboardIcon },
   { href: "/requests", label: "Navbat", icon: queueIcon },
   { href: "/payments", label: "To'lovlar", icon: paymentsIcon },
-  { href: "/slots", label: "Vaqt", icon: slotsIcon }
 ];
 
 const MORE = [
@@ -19,6 +18,7 @@ const MORE = [
   { href: "/users", label: "Mijozlar", icon: usersIcon },
   { href: "/leads", label: "Leadlar", icon: leadsIcon },
   { href: "/bookings", label: "Bronlar", icon: bookingIcon },
+  { href: "/slots", label: "Vaqt slotlari", icon: slotsIcon },
   { href: "/revenue", label: "Daromad", icon: revenueIcon },
   { href: "/tariffs", label: "Tariflar", icon: tariffsIcon },
   { href: "/knowledge", label: "Bilim bazasi", icon: bookIcon },
