@@ -22,6 +22,8 @@ import type {
   User
 } from "../../types";
 
+
+
 /* ─── DayRevenueSelector ─── */
 function DayRevenueSelector({ dayStats }: { dayStats: AdminRevenue["dayStats"] }) {
   const [selectedDate, setSelectedDate] = useState("");
@@ -29,31 +31,16 @@ function DayRevenueSelector({ dayStats }: { dayStats: AdminRevenue["dayStats"] }
   const [customLoading, setCustomLoading] = useState(false);
   const [customError, setCustomError] = useState("");
 
-  const lookupLocal = (date: string) => {
-    const found = dayStats.find(d => d.date === date);
-    return found ?? null;
-  };
-
   const handleSearch = async () => {
     if (!selectedDate) return;
     setCustomError("");
-
-    const local = lookupLocal(selectedDate);
-    if (local) {
-      setCustomResult(local);
-      return;
-    }
-
-    // Date not in 30-day cache → ask backend with custom range
+    const local = dayStats.find(d => d.date === selectedDate) ?? null;
+    if (local) { setCustomResult(local); return; }
     setCustomLoading(true);
     try {
       const data = await api.get<AdminRevenue>(`/admin/revenue?from=${selectedDate}&to=${selectedDate}`);
       const day = data.dayStats.find(d => d.date === selectedDate);
-      if (day) {
-        setCustomResult(day);
-      } else {
-        setCustomResult({ amount: 0, count: 0, currency: "UZS" });
-      }
+      setCustomResult(day ?? { amount: 0, count: 0, currency: "UZS" });
     } catch {
       setCustomError("Ma'lumot yuklanmadi");
     } finally {
@@ -62,56 +49,44 @@ function DayRevenueSelector({ dayStats }: { dayStats: AdminRevenue["dayStats"] }
   };
 
   return (
-    <div style={{ marginTop: 20, borderTop: "1px solid var(--border)", paddingTop: 16 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
-        Kunlik daromad ko'rish
-      </div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
+    <div className="surface panel" style={{ marginBottom: 20 }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
+          Kunlik daromad
+        </span>
         <input
           type="date"
           className="input"
-          style={{ width: 170 }}
+          style={{ width: 160, flex: "0 0 auto" }}
           value={selectedDate}
           onChange={e => { setSelectedDate(e.target.value); setCustomResult(null); setCustomError(""); }}
           max={new Date().toISOString().slice(0, 10)}
         />
-        <button
-          className="btn-primary"
-          style={{ padding: "9px 20px" }}
-          onClick={handleSearch}
-          disabled={!selectedDate || customLoading}
-        >
+        <button className="btn-primary" style={{ padding: "9px 16px" }} onClick={handleSearch} disabled={!selectedDate || customLoading}>
           {customLoading ? "…" : "Ko'rish"}
         </button>
         {customResult && (
-          <button
-            className="btn-secondary"
-            style={{ padding: "9px 14px" }}
-            onClick={() => { setCustomResult(null); setSelectedDate(""); }}
-          >
-            Tozalash
-          </button>
+          <>
+            <span style={{ fontWeight: 800, fontSize: 18, color: customResult.amount > 0 ? "var(--ok)" : "var(--muted)" }}>
+              {customResult.amount > 0 ? formatMoney(customResult.amount, customResult.currency || "UZS") : "0 so'm"}
+            </span>
+            <span style={{ fontSize: 13, color: "var(--muted)" }}>{customResult.count} ta to'lov</span>
+            <button className="btn-ghost" style={{ padding: "6px 10px", fontSize: 13 }} onClick={() => { setCustomResult(null); setSelectedDate(""); }}>✕</button>
+          </>
         )}
       </div>
+      {customError && <div style={{ marginTop: 8, color: "var(--danger)", fontSize: 13 }}>{customError}</div>}
+    </div>
+  );
+}
 
-      {customError && (
-        <div style={{ marginTop: 10, color: "var(--danger)", fontSize: 13 }}>{customError}</div>
-      )}
-
-      {customResult && (
-        <div style={{ marginTop: 14, display: "flex", gap: 16, flexWrap: "wrap" }}>
-          <div className="stat-card" style={{ minWidth: 180 }}>
-            <div className="stat-number" style={{ color: customResult.amount > 0 ? "var(--ok)" : "var(--muted)" }}>
-              {customResult.amount > 0 ? formatMoney(customResult.amount, customResult.currency || "UZS") : "0"}
-            </div>
-            <div className="stat-label">{selectedDate} · Daromad</div>
-          </div>
-          <div className="stat-card" style={{ minWidth: 130 }}>
-            <div className="stat-number">{customResult.count}</div>
-            <div className="stat-label">To'lovlar soni</div>
-          </div>
-        </div>
-      )}
+/* ─── helpers ─── */
+function StatCard({ label, value, color, sub }: { label: string; value: string | number; color?: string; sub?: string }) {
+  return (
+    <div className="stat-card">
+      <div className="stat-number" style={{ color: color || "var(--ink)", fontSize: 22 }}>{value}</div>
+      <div className="stat-label">{label}</div>
+      {sub && <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{sub}</div>}
     </div>
   );
 }
@@ -136,24 +111,6 @@ const emptyAnalytics: AdminAnalytics = {
   topQuestions: [], topTariffs: [], dayStats: []
 };
 
-/* ─── helpers ─── */
-function StatCard({ label, value, color, sub }: { label: string; value: string | number; color?: string; sub?: string }) {
-  return (
-    <div className="stat-card">
-      <div className="stat-number" style={{ color: color || "var(--ink)", fontSize: 22 }}>{value}</div>
-      <div className="stat-label">{label}</div>
-      {sub && <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{sub}</div>}
-    </div>
-  );
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{ fontWeight: 700, fontSize: 12, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 14 }}>
-      {children}
-    </div>
-  );
-}
 
 function UpcomingBookingsWidget({ items }: { items: Booking[] }) {
   const now = Date.now();
@@ -166,7 +123,7 @@ function UpcomingBookingsWidget({ items }: { items: Booking[] }) {
 
   return (
     <div className="surface panel" style={{ marginBottom: 20 }}>
-      <SectionTitle>Yaqin uchrashuvlar (24 soat)</SectionTitle>
+      <div style={{ fontWeight: 700, fontSize: 12, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 14 }}>Yaqin uchrashuvlar (24 soat)</div>
       {sorted.length === 0 ? (
         <p style={{ color: "var(--muted)", fontSize: 13 }}>Yaqin 24 soat ichida uchrashuvlar yo'q.</p>
       ) : (
@@ -216,39 +173,6 @@ function UpcomingBookingsWidget({ items }: { items: Booking[] }) {
           })}
         </div>
       )}
-    </div>
-  );
-}
-
-function MetricCard({
-  label,
-  value,
-  data,
-  color
-}: {
-  label: string;
-  value: number | string;
-  data: WavePoint[];
-  color: string;
-}) {
-  const series = data.length > 0 ? data : [
-    { label: "", value: 0 },
-    { label: "", value: 0 }
-  ];
-  return (
-    <div className="metric-card">
-      <div className="metric-card-label">{label}</div>
-      <div className="metric-card-value count-up-anim">{value}</div>
-      <div className="metric-card-spark">
-        <WaveChart
-          data={series}
-          height={56}
-          color={color}
-          gradientFrom={color}
-          gradientTo={color}
-          ariaLabel={`${label} sparkline`}
-        />
-      </div>
     </div>
   );
 }
@@ -582,38 +506,16 @@ export default function DashboardPage() {
         <main>
           <Sk.PageHeader />
           <Sk.Hero />
-          <Sk.StatGrid cols={4} />
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 14, marginBottom: 20 }}>
-            <Sk.Card rows={4} />
-            <Sk.Card rows={4} />
-            <Sk.Card rows={4} />
-          </div>
-          <Sk.Table rows={5} cols={5} />
+          <Sk.StatGrid cols={3} />
         </main>
       </AuthGuard>
     );
   }
 
-  // Build wave data series from existing revenue + analytics shape
   const revenueWave: WavePoint[] = (revenue?.dayStats ?? []).map((d) => ({
     label: d.date.slice(5),
     value: d.amount / 100,
     caption: `${d.date} · ${d.count} ta to'lov`
-  }));
-  const questionsWave: WavePoint[] = (analytics?.dayStats ?? []).map((d) => ({
-    label: d.date.slice(5),
-    value: d.questions,
-    caption: `${d.date} · ${d.questions} ta savol`
-  }));
-  const approvedWave: WavePoint[] = (analytics?.dayStats ?? []).map((d) => ({
-    label: d.date.slice(5),
-    value: d.approvedPayments,
-    caption: `${d.date} · ${d.approvedPayments} ta to'lov`
-  }));
-  const usersTrendWave: WavePoint[] = revenueWave.map((d, i) => ({
-    label: d.label,
-    value: Math.round(stats.totalUsers * (i + 1) / Math.max(revenueWave.length, 1)),
-    caption: d.caption
   }));
 
   const todayRevenue = revenue?.today;
@@ -625,14 +527,19 @@ export default function DashboardPage() {
   return (
     <AuthGuard>
       <main>
-        {/* Header */}
-        <div className="page-header" style={{ marginBottom: 20 }}>
-          <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>Dashboard <LiveBadge /></h1>
+        {/* ── Header ── */}
+        <div className="page-header" style={{ marginBottom: 16 }}>
+          <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            Dashboard <LiveBadge />
+          </h1>
           <button className="btn-secondary" onClick={() => load()}>Yangilash</button>
         </div>
 
+        {/* ── Kunlik daromad qidirish (tepada) ── */}
+        <DayRevenueSelector dayStats={revenue?.dayStats ?? []} />
+
         {/* ── HERO ── */}
-        <section className="dash-hero">
+        <section className="dash-hero" style={{ marginBottom: 20 }}>
           <div className="dash-hero-grid">
             <div>
               <p className="dash-hero-eyebrow">Bugungi daromad</p>
@@ -672,156 +579,18 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* ── Yaqin uchrashuvlar ── */}
-        <UpcomingBookingsWidget items={upcoming} />
-
-        {/* ── Metric cards with sparklines ── */}
+        {/* ── 3 asosiy ko'rsatkich ── */}
         <div
           className="grid"
-          style={{
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: 14,
-            marginBottom: 24
-          }}
+          style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 20 }}
         >
-          <MetricCard
-            label="Mijozlar"
-            value={stats.totalUsers}
-            data={usersTrendWave}
-            color="#0a0a0a"
-          />
-          <MetricCard
-            label="Bugungi savollar"
-            value={stats.todayQuestions}
-            data={questionsWave}
-            color="#1d4ed8"
-          />
-          <MetricCard
-            label="Tasdiqlangan to'lovlar"
-            value={stats.approvedPayments}
-            data={approvedWave}
-            color="#16a34a"
-          />
-          <MetricCard
-            label="Qabul so'rovlari"
-            value={stats.unresolvedConversations}
-            data={questionsWave}
-            color="#b45309"
-          />
+          <StatCard label="Kutilayotgan to'lovlar" value={stats.pendingPaymentApprovals} color="var(--warn)" />
+          <StatCard label="Qoniqmagan mijozlar"    value={stats.unsatisfiedCount}         color="var(--danger)" />
+          <StatCard label="Advokatga yo'naltirilgan" value={stats.redirectedToAdvocate} />
         </div>
 
-        {/* ── Daromad to'lqini (30 kun) ── */}
-        <div className="chart-card" style={{ marginBottom: 18 }}>
-          <div className="chart-card-head">
-            <div>
-              <h3 className="chart-card-title">Daromad · So'nggi 30 kun</h3>
-              <div className="chart-card-amount" style={{ marginTop: 6 }}>
-                {monthRevenueText}
-              </div>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-                {revenue?.month.count ?? 0} ta to'lov
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 14, fontSize: 12, color: "var(--muted)" }}>
-              <span>
-                <strong style={{ color: "var(--ok)", fontSize: 16 }}>
-                  {weekRevenueText}
-                </strong>
-                <span style={{ marginLeft: 6 }}>shu hafta</span>
-              </span>
-            </div>
-          </div>
-          <WaveChart
-            data={revenueWave}
-            height={220}
-            color="#16a34a"
-            showAxis
-            showDots={revenueWave.length <= 14}
-            formatValue={(v) => formatMoney(Math.round(v * 100), "UZS")}
-            ariaLabel="Daromad grafigi"
-          />
-
-          {/* ── Kunlik daromad qidirish ── */}
-          <DayRevenueSelector dayStats={revenue?.dayStats ?? []} />
-        </div>
-
-        {/* ── Savollar to'lqini ── */}
-        <div className="chart-card" style={{ marginBottom: 18 }}>
-          <div className="chart-card-head">
-            <div>
-              <h3 className="chart-card-title">Savollar · So'nggi 30 kun</h3>
-              <div className="chart-card-amount" style={{ marginTop: 6 }}>
-                {analytics.questions.month}
-              </div>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-                bugun {analytics.questions.today} · hafta {analytics.questions.week}
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 14, fontSize: 12, color: "var(--muted)" }}>
-              <span>
-                Qoniqmaslik:{" "}
-                <strong style={{ color: "var(--danger)", fontSize: 14 }}>
-                  {analytics.satisfaction.unsatisfiedRate}%
-                </strong>
-              </span>
-            </div>
-          </div>
-          <WaveChart
-            data={questionsWave}
-            height={200}
-            color="#1d4ed8"
-            showAxis
-            showDots={questionsWave.length <= 14}
-            ariaLabel="Savollar grafigi"
-          />
-        </div>
-
-        {/* ── Key metrics row ── */}
-        <div className="surface panel" style={{ marginBottom: 20 }}>
-          <div
-            className="grid"
-            style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}
-          >
-            <StatCard
-              label="Kutilayotgan to'lovlar"
-              value={stats.pendingPaymentApprovals}
-              color="var(--warn)"
-            />
-            <StatCard
-              label="Qoniqmagan mijozlar"
-              value={stats.unsatisfiedCount}
-              color="var(--danger)"
-            />
-            <StatCard
-              label="Advokatga yo'naltirilgan"
-              value={stats.redirectedToAdvocate}
-            />
-          </div>
-        </div>
-
-        {/* ── Top tariflar ── */}
-        {analytics.topTariffs.length > 0 && (
-          <div className="surface panel" style={{ marginBottom: 20 }}>
-            <SectionTitle>Eng ko'p sotib olingan tariflar (30 kun)</SectionTitle>
-            <table className="table">
-              <thead>
-                <tr><th>#</th><th>Tarif</th><th>Sotilgan</th></tr>
-              </thead>
-              <tbody>
-                {analytics.topTariffs.map((t, i) => (
-                  <tr key={t.tariffId}>
-                    <td style={{ color: "var(--muted)", width: 40 }}>{i + 1}</td>
-                    <td>
-                      <div style={{ fontWeight: 700 }}>{(t.titleI18n as Record<string,string>)?.UZ || (t.titleI18n as Record<string,string>)?.RU || t.code}</div>
-                      <div style={{ fontSize: 11, color: "var(--muted)" }}>{t.code}</div>
-                    </td>
-                    <td><span className="tag tag-ok">{t.count} ta</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        {/* ── Yaqin uchrashuvlar ── */}
+        <UpcomingBookingsWidget items={upcoming} />
       </main>
     </AuthGuard>
   );
