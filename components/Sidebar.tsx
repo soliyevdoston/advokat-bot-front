@@ -190,7 +190,7 @@ export function Sidebar() {
     };
 
     void check();
-    const id = setInterval(check, 15000);
+    const id = setInterval(check, 300000); // 5 daqiqa
     return () => clearInterval(id);
   }, []);
 

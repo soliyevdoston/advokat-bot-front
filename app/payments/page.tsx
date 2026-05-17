@@ -83,7 +83,7 @@ export default function PaymentsPage() {
   usePolling(async () => {
     await loadCounts();
     await loadTab(tab, true);
-  }, 8000);
+  }, 60000); // 1 daqiqa
 
   const doModerate = async (id: string, action: "approve" | "reject", note?: string) => {
     setModerating(id);

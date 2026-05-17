@@ -498,7 +498,7 @@ export default function DashboardPage() {
   };
 
   useEffect(() => { void load(); }, []);
-  usePolling(() => load(true), 10000);
+  usePolling(() => load(true), 120000); // 2 daqiqa
 
   if (loading) {
     return (

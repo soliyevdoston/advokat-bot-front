@@ -88,7 +88,7 @@ export default function BookingsPage() {
   };
 
   useEffect(() => { void load(); }, []);
-  usePolling(() => load(true), 8000);
+  usePolling(() => load(true), 120000); // 2 daqiqa
 
   const openModal = (item: BookingScheduleItem) => {
     setLink("");

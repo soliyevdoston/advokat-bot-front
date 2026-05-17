@@ -49,7 +49,7 @@ export default function RequestsPage() {
   };
 
   useEffect(() => { void load(); }, []);
-  usePolling(() => load(true), 10000);
+  usePolling(() => load(true), 60000); // 1 daqiqa
 
   const openModal = (p: Payment) => {
     const now = new Date();

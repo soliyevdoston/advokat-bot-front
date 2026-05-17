@@ -16,7 +16,16 @@ export function usePolling(fn: () => Promise<void> | void, intervalMs: number) {
       }
     };
 
+    // Tab ochilganda (focus/visibility) darhol yangilaydi
+    const onVisible = () => {
+      if (!document.hidden) void tick();
+    };
+
     const id = setInterval(tick, intervalMs);
-    return () => clearInterval(id);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [intervalMs]);
 }

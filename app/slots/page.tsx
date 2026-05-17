@@ -110,7 +110,7 @@ export default function SlotsPage() {
   };
 
   useEffect(() => { void load(); }, []);
-  usePolling(load, 10000);
+  usePolling(load, 120000); // 2 daqiqa
 
   // Group upcoming slots by date
   const grouped = useMemo(() => {

@@ -96,7 +96,7 @@ export default function SchedulePage() {
   };
 
   useEffect(() => { void load(); }, []);
-  usePolling(load, 15000);
+  usePolling(load, 120000); // 2 daqiqa
 
   // Group booked slots by date (next 14 days)
   const upcomingDates = useMemo(() => getUpcomingDates(), []);
